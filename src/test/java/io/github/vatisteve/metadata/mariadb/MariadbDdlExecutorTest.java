@@ -1,6 +1,7 @@
 package io.github.vatisteve.metadata.mariadb;
 
 import io.github.vatisteve.metadata.core.ColumnMetadata;
+import io.github.vatisteve.metadata.core.ConstraintType;
 import io.github.vatisteve.metadata.core.ReferenceActionType;
 import io.github.vatisteve.metadata.core.ReferenceMetadata;
 import io.github.vatisteve.metadata.core.TableMetadata;
@@ -10,6 +11,7 @@ import java.sql.Connection;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -98,5 +100,57 @@ class MariadbDdlExecutorTest {
         CapturingExecutor executor = new CapturingExecutor(table);
         executor.createTable();
         assertTrue(executor.capturedSql.contains("CREATE TABLE `empty`"), executor.capturedSql);
+    }
+
+    private CapturingExecutor constraintExecutor() {
+        return new CapturingExecutor(TableMetadata.builder().name("person").columnsMetadata(List.of(
+            ColumnMetadata.builder().name("id").dataType("INT").build(),
+            ColumnMetadata.builder().name("age").dataType("INT").checkConstraint("> 0").build(),
+            ColumnMetadata.builder().name("email").dataType("VARCHAR").dataTypeExtension("255").build(),
+            ColumnMetadata.builder().name("parent_id").dataType("INT")
+                .referenceMetadata(new ReferenceMetadata("parent", "id",
+                    ReferenceActionType.CASCADE, ReferenceActionType.CASCADE)).build()
+        )).build());
+    }
+
+    @Test
+    void addColumnConstraint_emitsMariadbForms() throws Exception {
+        CapturingExecutor e = constraintExecutor();
+
+        e.addColumnConstraint(ConstraintType.PRIMARY_KEY, "id");
+        assertEquals("ALTER TABLE person ADD PRIMARY KEY (`id`)", e.capturedSql);
+
+        e.addColumnConstraint(ConstraintType.UNIQUE, "email");
+        assertEquals("ALTER TABLE person ADD CONSTRAINT `person_email_uq` UNIQUE (`email`)", e.capturedSql);
+
+        e.addColumnConstraint(ConstraintType.CHECK, "age");
+        assertEquals("ALTER TABLE person ADD CONSTRAINT `person_age_chk` CHECK (`age` > 0)", e.capturedSql);
+
+        e.addColumnConstraint(ConstraintType.NOT_NULL, "id");
+        assertEquals("ALTER TABLE person MODIFY `id` INT NOT NULL", e.capturedSql);
+
+        e.addColumnConstraint(ConstraintType.FOREIGN_KEY, "parent_id");
+        assertEquals("ALTER TABLE person ADD CONSTRAINT `person_parent_id_fk` "
+            + "FOREIGN KEY (`parent_id`) REFERENCES `parent`(`id`) ON DELETE CASCADE ON UPDATE CASCADE", e.capturedSql);
+    }
+
+    @Test
+    void dropColumnConstraint_emitsMariadbForms() throws Exception {
+        CapturingExecutor e = constraintExecutor();
+
+        e.dropColumnConstraint(ConstraintType.PRIMARY_KEY, "ignored");
+        assertEquals("ALTER TABLE person DROP PRIMARY KEY", e.capturedSql);
+
+        e.dropColumnConstraint(ConstraintType.UNIQUE, "uq_email");
+        assertEquals("ALTER TABLE person DROP INDEX uq_email", e.capturedSql);
+
+        e.dropColumnConstraint(ConstraintType.CHECK, "ck_age");
+        assertEquals("ALTER TABLE person DROP CHECK ck_age", e.capturedSql);
+
+        e.dropColumnConstraint(ConstraintType.FOREIGN_KEY, "fk_parent");
+        assertEquals("ALTER TABLE person DROP FOREIGN KEY fk_parent", e.capturedSql);
+
+        e.dropColumnConstraint(ConstraintType.NOT_NULL, "id");
+        assertEquals("ALTER TABLE person MODIFY `id` INT", e.capturedSql);
     }
 }

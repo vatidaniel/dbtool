@@ -1,6 +1,7 @@
 package io.github.vatisteve.metadata.postgres;
 
 import io.github.vatisteve.metadata.core.ColumnMetadata;
+import io.github.vatisteve.metadata.core.ConstraintType;
 import io.github.vatisteve.metadata.core.ReferenceActionType;
 import io.github.vatisteve.metadata.core.ReferenceMetadata;
 import io.github.vatisteve.metadata.core.TableMetadata;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.sql.Connection;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -84,5 +86,28 @@ class PostgresDdlExecutorTest {
         assertTrue(sql.contains("ALTER TABLE person ALTER COLUMN \"name\" TYPE VARCHAR(255)"), sql);
         // must NOT use the MySQL MODIFY form
         assertTrue(!sql.contains("MODIFY"), sql);
+    }
+
+    @Test
+    void constraints_usePostgresDivergentForms() throws Exception {
+        CapturingExecutor e = new CapturingExecutor(personTable());
+
+        // NOT NULL via ALTER COLUMN, not MySQL's MODIFY
+        e.addColumnConstraint(ConstraintType.NOT_NULL, "id");
+        assertEquals("ALTER TABLE person ALTER COLUMN \"id\" SET NOT NULL", e.capturedSql);
+
+        // PK add shares the standard form (delegates to super)
+        e.addColumnConstraint(ConstraintType.PRIMARY_KEY, "id");
+        assertEquals("ALTER TABLE person ADD PRIMARY KEY (\"id\")", e.capturedSql);
+
+        // every named constraint drops the same way
+        e.dropColumnConstraint(ConstraintType.PRIMARY_KEY, "person_pkey");
+        assertEquals("ALTER TABLE person DROP CONSTRAINT person_pkey", e.capturedSql);
+
+        e.dropColumnConstraint(ConstraintType.FOREIGN_KEY, "person_parent_id_fk");
+        assertEquals("ALTER TABLE person DROP CONSTRAINT person_parent_id_fk", e.capturedSql);
+
+        e.dropColumnConstraint(ConstraintType.NOT_NULL, "id");
+        assertEquals("ALTER TABLE person ALTER COLUMN \"id\" DROP NOT NULL", e.capturedSql);
     }
 }

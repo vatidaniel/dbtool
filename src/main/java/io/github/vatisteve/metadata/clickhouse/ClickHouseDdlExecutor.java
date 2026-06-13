@@ -131,13 +131,22 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
     }
 
     @Override
-    public void addColumnConstraint(ConstraintType constraintType, String columnName) {
-        throw new UnsupportedOperationException("This function has not been implemented yet!");
+    public void addColumnConstraint(ConstraintType constraintType, String columnName) throws SQLException {
+        // ClickHouse only supports CHECK constraints; it has no primary/foreign/unique/not-null constraints.
+        if (constraintType != ConstraintType.CHECK) {
+            throw new UnsupportedOperationException("ClickHouse does not support " + constraintType + " constraints");
+        }
+        ColumnMetadata colMeta = getColumn(columnName);
+        executeSql(ALTER_TABLE + tableMetadata.getName() + " ADD CONSTRAINT constraint_" + columnName
+            + " CHECK " + columnName + SPACE + colMeta.getCheckConstraint());
     }
 
     @Override
-    public void dropColumnConstraint(ConstraintType constraintType, String constraintName) {
-        throw new UnsupportedOperationException("This function has not been implemented yet!");
+    public void dropColumnConstraint(ConstraintType constraintType, String constraintName) throws SQLException {
+        if (constraintType != ConstraintType.CHECK) {
+            throw new UnsupportedOperationException("ClickHouse does not support " + constraintType + " constraints");
+        }
+        executeSql(ALTER_TABLE + tableMetadata.getName() + " DROP CONSTRAINT " + constraintName);
     }
 
     @Override

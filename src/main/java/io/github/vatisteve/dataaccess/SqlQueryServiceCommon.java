@@ -34,11 +34,15 @@ public class SqlQueryServiceCommon {
     }
 
     /**
-     * Format common sql query result result object value to string
+     * Format a common SQL query result value to string. {@code null} becomes an empty string and
+     * character/byte arrays are rendered as their textual content rather than the default array
+     * {@code toString()}.
      */
     public static String asString(Object object) {
-        // TODO: implement the as-string method
-        return object.toString();
+        if (object == null) return "";
+        if (object instanceof char[]) return new String((char[]) object);
+        if (object instanceof byte[]) return new String((byte[]) object);
+        return String.valueOf(object);
     }
 
     public String describeColumnsNameQuery(String schemaName, String tableName, String... ignoredColumns) {

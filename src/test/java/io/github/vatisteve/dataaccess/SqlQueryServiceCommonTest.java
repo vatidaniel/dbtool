@@ -3,6 +3,7 @@ package io.github.vatisteve.dataaccess;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -55,6 +56,14 @@ class SqlQueryServiceCommonTest {
         // PostgreSQL double-quotes identifiers instead of MySQL backticks
         assertTrue(query.contains("\"information_schema\".\"columns\""), query);
         assertTrue(!query.contains("`"), query);
+    }
+
+    @Test
+    void asString_isNullSafeAndHandlesArrays() {
+        assertEquals("", SqlQueryServiceCommon.asString(null));
+        assertEquals("42", SqlQueryServiceCommon.asString(42));
+        assertEquals("abc", SqlQueryServiceCommon.asString(new char[]{'a', 'b', 'c'}));
+        assertEquals("xy", SqlQueryServiceCommon.asString(new byte[]{'x', 'y'}));
     }
 
     @Test
