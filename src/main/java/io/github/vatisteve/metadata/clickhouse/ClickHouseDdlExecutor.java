@@ -25,6 +25,9 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
 
     @Override
     public void createTable() throws SQLException {
+        if (collectionNullSafe(tableMetadata.getColumnsMetadata()).isEmpty()) {
+            throw new IllegalStateException("Cannot create table " + tableMetadata.getName() + " without any column");
+        }
         List<String> cols = new ArrayList<>();
         List<String> prs = new ArrayList<>(); // primary key columns
         Map<String, Integer> ordsM = new HashMap<>(); // order by columns
@@ -67,6 +70,7 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
     }
 
     private String buildColumnDefault(ColumnMetadata.DefaultColumnValue cd) {
+        if (cd.getValue() == null) return " DEFAULT " + NULL.trim();
         return " DEFAULT " + Optional.ofNullable(cd.getDataType()).map(d -> {
             if (d instanceof DataType.BasicDataType) {
                 return getColumnDefaultValue((DataType.BasicDataType) d, cd);
@@ -81,9 +85,10 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
         switch (d) {
             case STRING:
             case SPATIAL:
+            case TEMPORAL:
+                // literals must be quoted; function defaults should use a null dataType to stay unquoted
                 return singleQuoteWrap(cd.getValue().toString());
             case NUMERIC:
-            case TEMPORAL:
             default:
                 return cd.getValue().toString();
         }
@@ -110,7 +115,9 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
     private ColumnMetadata getColumn(String columnName) {
         return collectionNullSafe(tableMetadata.getColumnsMetadata()).stream()
             .filter(c -> StringUtils.equals(c.getName(), columnName))
-            .findFirst().orElseThrow();
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "No column named '" + columnName + "' in table " + tableMetadata.getName()));
     }
 
     @Override

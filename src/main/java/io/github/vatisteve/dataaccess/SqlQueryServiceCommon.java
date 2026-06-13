@@ -1,5 +1,6 @@
 package io.github.vatisteve.dataaccess;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +38,7 @@ public class SqlQueryServiceCommon {
     public static String asString(Object object) {
         if (object == null) return "";
         if (object instanceof char[]) return new String((char[]) object);
-        if (object instanceof byte[]) return new String((byte[]) object);
+        if (object instanceof byte[]) return new String((byte[]) object, StandardCharsets.UTF_8);
         return String.valueOf(object);
     }
 

@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -92,14 +93,35 @@ class MariadbDdlExecutorTest {
     }
 
     @Test
-    void createTable_withNoColumns_doesNotThrow() throws Exception {
+    void createTable_withNoColumns_throws() {
         TableMetadata table = TableMetadata.builder()
             .name("empty")
             .columnsMetadata(Collections.emptyList())
             .build();
         CapturingExecutor executor = new CapturingExecutor(table);
-        executor.createTable();
-        assertTrue(executor.capturedSql.contains("CREATE TABLE `empty`"), executor.capturedSql);
+        assertThrows(IllegalStateException.class, executor::createTable);
+    }
+
+    @Test
+    void createTable_quotesTemporalDefaultAndRendersNullDefault() throws Exception {
+        ColumnMetadata created = ColumnMetadata.builder()
+            .name("created").dataType("DATETIME")
+            .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
+                .dataType(MariadbDataType.DATETIME).value("2024-01-01 00:00:00").build())
+            .build();
+        ColumnMetadata note = ColumnMetadata.builder()
+            .name("note").dataType("VARCHAR").dataTypeExtension("50")
+            .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
+                .dataType(MariadbDataType.VARCHAR).value(null).build())
+            .build();
+        TableMetadata table = TableMetadata.builder()
+            .name("t").columnsMetadata(List.of(created, note)).build();
+
+        CapturingExecutor e = new CapturingExecutor(table);
+        e.createTable();
+
+        assertTrue(e.capturedSql.contains("DEFAULT '2024-01-01 00:00:00'"), e.capturedSql);
+        assertTrue(e.capturedSql.contains("DEFAULT NULL"), e.capturedSql);
     }
 
     private CapturingExecutor constraintExecutor() {

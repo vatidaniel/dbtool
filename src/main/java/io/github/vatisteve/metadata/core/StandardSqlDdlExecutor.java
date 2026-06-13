@@ -44,6 +44,9 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
 
     @Override
     public void createTable() throws SQLException {
+        if (collectionNullSafe(tableMetadata.getColumnsMetadata()).isEmpty()) {
+            throw new IllegalStateException("Cannot create table " + tableMetadata.getName() + " without any column");
+        }
         StringBuilder sql = new StringBuilder("CREATE TABLE ").append(dialect.quoteIdentifier(tableMetadata.getName()))
             .append(OPEN_BRACKET).append(SPACE);
         List<String> prs = new ArrayList<>();
@@ -84,6 +87,10 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
 
     private void appendDefaultColumnValue(StringBuilder sql, ColumnMetadata.DefaultColumnValue d) {
         sql.append(" DEFAULT ");
+        if (d.getValue() == null) {
+            sql.append(NULL.trim());
+            return;
+        }
         Optional.ofNullable(d.getDataType()).ifPresentOrElse(dt -> {
             if (dt instanceof DataType.BasicDataType) {
                 doAppendDefaultColumnValue(sql, d, (DataType.BasicDataType) dt);
@@ -99,10 +106,12 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         switch (basicDataType) {
             case STRING:
             case SPATIAL:
+            case TEMPORAL:
+                // string, spatial and temporal literals must be quoted; function defaults
+                // (e.g. CURRENT_TIMESTAMP) should be passed with a null dataType to stay unquoted
                 sql.append(singleQuoteWrap(d.getValue().toString()));
                 break;
             case NUMERIC:
-            case TEMPORAL:
                 sql.append(d.getValue().toString());
                 break;
             default:
@@ -148,7 +157,9 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
     protected ColumnMetadata getColumnMetadata(String columnName) {
         return collectionNullSafe(tableMetadata.getColumnsMetadata()).stream()
             .filter(c -> StringUtils.equals(c.getName(), columnName))
-            .findFirst().orElseThrow();
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "No column named '" + columnName + "' in table " + tableMetadata.getName()));
     }
 
     @Override
