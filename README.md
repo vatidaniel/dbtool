@@ -45,6 +45,9 @@ try (DdlExecutor ddl = new MariadbDdlExecutor(table, connection)) {
 }
 ```
 
+The executor uses the `Connection` you pass in but does **not** close it — the caller owns the
+connection's lifecycle (`close()` is a no-op kept only for try-with-resources convenience).
+
 Build a query:
 
 ```java

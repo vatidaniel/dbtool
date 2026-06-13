@@ -275,8 +275,9 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
     }
 
     @Override
-    public void close() throws Exception {
-        connection.close();
+    public void close() {
+        // The Connection is supplied by the caller, who owns its lifecycle; this executor does not
+        // close it. close() is kept so the executor can still be used in a try-with-resources block.
     }
 
 }
