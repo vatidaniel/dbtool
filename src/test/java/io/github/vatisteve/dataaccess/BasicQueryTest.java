@@ -55,4 +55,18 @@ class BasicQueryTest {
     void emptyQuery_isEmptyString() {
         assertEquals("", new BasicQuery().toQueryString());
     }
+
+    @Test
+    void paginate_defaultDialect_usesLimitOffset() {
+        String query = new BasicQuery().select("*").from("`t`").paginate(10, 20).toQueryString();
+        assertTrue(query.contains("LIMIT 10 OFFSET 20"), query);
+    }
+
+    @Test
+    void paginate_isDialectAware() {
+        // Swapping the dialect changes the pagination clause with no other code change.
+        String query = new BasicQuery(new SqlServerDialect()).select("*").from("[t]").paginate(10, 20).toQueryString();
+        assertTrue(query.contains("OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY"), query);
+        assertTrue(!query.contains("LIMIT"), query);
+    }
 }

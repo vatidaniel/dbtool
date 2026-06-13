@@ -10,11 +10,17 @@ package io.github.vatisteve.dataaccess;
 public class BasicQuery extends SqlQueryConstants {
 
     private final StringBuilder sqlQuery;
+    private final SqlDialect dialect;
 
     private boolean selectClauseIsUsed = false;
 
     public BasicQuery() {
+        this(new MariadbDialect());
+    }
+
+    public BasicQuery(SqlDialect dialect) {
         this.sqlQuery = new StringBuilder();
+        this.dialect = dialect;
     }
 
     private void throwQueryBuilderException() {
@@ -76,15 +82,21 @@ public class BasicQuery extends SqlQueryConstants {
         return this;
     }
 
-    // Limit ...
+    // Limit ... (raw MySQL/Postgres primitive; not dialect-aware - prefer paginate(...))
     public BasicQuery limit(int limit) {
         sqlQuery.append(LIMIT_KEYWORD).append(limit).append(SPACE);
         return this;
     }
 
-    // Offset ...
+    // Offset ... (raw MySQL/Postgres primitive; not dialect-aware - prefer paginate(...))
     public BasicQuery offset(long offset) {
         sqlQuery.append(OFFSET_KEYWORD).append(offset).append(SPACE);
+        return this;
+    }
+
+    // Pagination, rendered by the dialect (e.g. LIMIT/OFFSET vs OFFSET ... FETCH NEXT)
+    public BasicQuery paginate(int limit, long offset) {
+        sqlQuery.append(dialect.paginate(limit, offset));
         return this;
     }
 

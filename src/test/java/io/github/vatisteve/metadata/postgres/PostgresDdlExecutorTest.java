@@ -65,8 +65,8 @@ class PostgresDdlExecutorTest {
         assertTrue(sql.contains("\"name\" VARCHAR(255)"), sql);
         assertTrue(sql.contains("DEFAULT 'unknown'"), sql);
         assertTrue(sql.contains("PRIMARY KEY(\"id\")"), sql);
-        // FK with distinct ON DELETE / ON UPDATE actions
-        assertTrue(sql.contains("FOREIGN KEY (\"parent_id\") REFERENCES parent(id)"), sql);
+        // FK with distinct ON DELETE / ON UPDATE actions; referenced names quoted per-dialect
+        assertTrue(sql.contains("FOREIGN KEY (\"parent_id\") REFERENCES \"parent\"(\"id\")"), sql);
         assertTrue(sql.contains("ON DELETE CASCADE"), sql);
         assertTrue(sql.contains("ON UPDATE SET NULL"), sql);
         // Postgres storage clause, not MySQL's "Engine ="

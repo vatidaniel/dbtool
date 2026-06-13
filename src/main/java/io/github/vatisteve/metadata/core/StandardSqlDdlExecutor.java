@@ -61,7 +61,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         }
         if (!ref.isEmpty()) {
             ref.forEach((columnName, refInfo) -> {
-                appendForeignKeyConstraint(sql, dialect.quoteIdentifier(columnName), refInfo);
+                appendForeignKeyConstraint(sql, columnName, refInfo);
                 sql.append(COMMA).append(SPACE);
             });
         }
@@ -110,10 +110,12 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         }
     }
 
-    private void appendForeignKeyConstraint(StringBuilder sql, String cn, ReferenceMetadata ref) {
-        sql.append(FOREIGN_KEY).append(SPACE).append(OPEN_BRACKET).append(cn).append(CLOSE_BRACKET).append(SPACE)
-            .append(REFERENCES).append(SPACE).append(ref.getTableName()).append(OPEN_BRACKET)
-            .append(ref.getColumnName()).append(CLOSE_BRACKET);
+    private void appendForeignKeyConstraint(StringBuilder sql, String columnName, ReferenceMetadata ref) {
+        // The referenced table/column are quoted as single identifiers; a schema-qualified
+        // (schema.table) reference name would need splitting first.
+        sql.append(FOREIGN_KEY).append(SPACE).append(OPEN_BRACKET).append(dialect.quoteIdentifier(columnName)).append(CLOSE_BRACKET).append(SPACE)
+            .append(REFERENCES).append(SPACE).append(dialect.quoteIdentifier(ref.getTableName())).append(OPEN_BRACKET)
+            .append(dialect.quoteIdentifier(ref.getColumnName())).append(CLOSE_BRACKET);
         if (ref.getOnDelete() != null) sql.append(" ON DELETE ").append(ref.getOnDelete().getLabel().toUpperCase());
         if (ref.getOnUpdate() != null) sql.append(" ON UPDATE ").append(ref.getOnUpdate().getLabel().toUpperCase());
     }

@@ -74,6 +74,8 @@ standard relational database:
 3. Add a `DataType` enum mapping the database's types to the `NUMERIC/STRING/TEMPORAL/SPATIAL` categories
    (see `MariadbDataType` / `PostgresDataType`).
 
-`SqlQueryServiceCommon` also takes a `SqlDialect`, so read-side queries (`information_schema` access,
-pagination) follow the same dialect. Databases that diverge too far from standard SQL can implement
-`DdlExecutor` directly instead of extending `StandardSqlDdlExecutor` (see `metadata.clickhouse`).
+`SqlQueryServiceCommon` and `BasicQuery` also take a `SqlDialect`, so read-side queries
+(`information_schema` access, pagination) follow the same dialect — `SqlServerDialect` shows a
+read-side/pagination-only dialect whose `OFFSET ... FETCH NEXT` differs from `LIMIT/OFFSET`. Foreign-key
+references in generated DDL are quoted per-dialect. Databases that diverge too far from standard SQL can
+implement `DdlExecutor` directly instead of extending `StandardSqlDdlExecutor` (see `metadata.clickhouse`).
