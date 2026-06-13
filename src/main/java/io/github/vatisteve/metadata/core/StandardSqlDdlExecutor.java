@@ -121,21 +121,26 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         if (ref.getOnUpdate() != null) sql.append(" ON UPDATE ").append(ref.getOnUpdate().getLabel().toUpperCase());
     }
 
+    /** The table name quoted for the active dialect; reuse wherever a statement references the table. */
+    protected String quotedTableName() {
+        return dialect.quoteIdentifier(tableMetadata.getName());
+    }
+
     @Override
     public void dropTable() throws SQLException {
-        executeSql("DROP TABLE " + tableMetadata.getName());
+        executeSql("DROP TABLE " + quotedTableName());
     }
 
     @Override
     public void renameTable(String newName) throws SQLException {
-        executeSql("RENAME TABLE " + tableMetadata.getName() + " TO " + newName);
+        executeSql("RENAME TABLE " + quotedTableName() + " TO " + dialect.quoteIdentifier(newName));
         tableMetadata.setName(newName);
     }
 
     @Override
     public void addColumn(String columnName) throws SQLException {
         ColumnMetadata columnMetadata = getColumnMetadata(columnName);
-        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(tableMetadata.getName()).append(" ADD COLUMN ");
+        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(quotedTableName()).append(" ADD COLUMN ");
         appendColumnSql(sql, columnMetadata);
         executeSql(sql.toString());
     }
@@ -148,12 +153,13 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
 
     @Override
     public void dropColumn(String columnName) throws SQLException {
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " DROP COLUMN " + columnName);
+        executeSql(ALTER_TABLE + quotedTableName() + " DROP COLUMN " + dialect.quoteIdentifier(columnName));
     }
 
     @Override
     public void renameColumn(String oldName, String newName) throws SQLException {
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " RENAME COLUMN " + oldName + " TO " + newName);
+        executeSql(ALTER_TABLE + quotedTableName() + " RENAME COLUMN "
+            + dialect.quoteIdentifier(oldName) + " TO " + dialect.quoteIdentifier(newName));
     }
 
     @Override
@@ -167,7 +173,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
      * (e.g. PostgreSQL's {@code ALTER COLUMN ... TYPE ...}) override this.
      */
     protected String buildUpdateColumnDefinitionSql(ColumnMetadata columnMetadata) {
-        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(tableMetadata.getName()).append(" MODIFY ");
+        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(quotedTableName()).append(" MODIFY ");
         appendColumnSql(sql, columnMetadata);
         return sql.toString();
     }
@@ -188,7 +194,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
      * this.
      */
     protected String buildAddConstraintSql(ConstraintType constraintType, ColumnMetadata column) {
-        String table = tableMetadata.getName();
+        String table = quotedTableName();
         String col = dialect.quoteIdentifier(column.getName());
         switch (constraintType) {
             case FOREIGN_KEY: {
@@ -219,7 +225,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
      * {@code NOT_NULL} the {@code name} argument is the column name.
      */
     protected String buildDropConstraintSql(ConstraintType constraintType, String name) {
-        String table = tableMetadata.getName();
+        String table = quotedTableName();
         switch (constraintType) {
             case FOREIGN_KEY:
                 return ALTER_TABLE + table + " DROP FOREIGN KEY " + name;

@@ -25,7 +25,7 @@ public class PostgresDdlExecutor extends StandardSqlDdlExecutor {
     @Override
     protected String buildUpdateColumnDefinitionSql(ColumnMetadata columnMetadata) {
         // PostgreSQL changes a column's type with ALTER COLUMN ... TYPE ... rather than MySQL's MODIFY.
-        return ALTER_TABLE + getTableMetadata().getName() + " ALTER COLUMN "
+        return ALTER_TABLE + quotedTableName() + " ALTER COLUMN "
             + getDialect().quoteIdentifier(columnMetadata.getName()) + " TYPE " + columnMetadata.getDataType();
     }
 
@@ -33,7 +33,7 @@ public class PostgresDdlExecutor extends StandardSqlDdlExecutor {
     protected String buildAddConstraintSql(ConstraintType constraintType, ColumnMetadata column) {
         if (constraintType == ConstraintType.NOT_NULL) {
             // PostgreSQL toggles NOT NULL via ALTER COLUMN, not MySQL's MODIFY <full column def>.
-            return ALTER_TABLE + getTableMetadata().getName() + " ALTER COLUMN "
+            return ALTER_TABLE + quotedTableName() + " ALTER COLUMN "
                 + getDialect().quoteIdentifier(column.getName()) + " SET NOT NULL";
         }
         return super.buildAddConstraintSql(constraintType, column);
@@ -41,7 +41,7 @@ public class PostgresDdlExecutor extends StandardSqlDdlExecutor {
 
     @Override
     protected String buildDropConstraintSql(ConstraintType constraintType, String name) {
-        String table = getTableMetadata().getName();
+        String table = quotedTableName();
         if (constraintType == ConstraintType.NOT_NULL) {
             // 'name' is the column name; PostgreSQL drops NOT NULL via ALTER COLUMN.
             return ALTER_TABLE + table + " ALTER COLUMN " + getDialect().quoteIdentifier(name) + " DROP NOT NULL";

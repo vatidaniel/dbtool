@@ -118,19 +118,19 @@ class MariadbDdlExecutorTest {
         CapturingExecutor e = constraintExecutor();
 
         e.addColumnConstraint(ConstraintType.PRIMARY_KEY, "id");
-        assertEquals("ALTER TABLE person ADD PRIMARY KEY (`id`)", e.capturedSql);
+        assertEquals("ALTER TABLE `person` ADD PRIMARY KEY (`id`)", e.capturedSql);
 
         e.addColumnConstraint(ConstraintType.UNIQUE, "email");
-        assertEquals("ALTER TABLE person ADD CONSTRAINT `person_email_uq` UNIQUE (`email`)", e.capturedSql);
+        assertEquals("ALTER TABLE `person` ADD CONSTRAINT `person_email_uq` UNIQUE (`email`)", e.capturedSql);
 
         e.addColumnConstraint(ConstraintType.CHECK, "age");
-        assertEquals("ALTER TABLE person ADD CONSTRAINT `person_age_chk` CHECK (`age` > 0)", e.capturedSql);
+        assertEquals("ALTER TABLE `person` ADD CONSTRAINT `person_age_chk` CHECK (`age` > 0)", e.capturedSql);
 
         e.addColumnConstraint(ConstraintType.NOT_NULL, "id");
-        assertEquals("ALTER TABLE person MODIFY `id` INT NOT NULL", e.capturedSql);
+        assertEquals("ALTER TABLE `person` MODIFY `id` INT NOT NULL", e.capturedSql);
 
         e.addColumnConstraint(ConstraintType.FOREIGN_KEY, "parent_id");
-        assertEquals("ALTER TABLE person ADD CONSTRAINT `person_parent_id_fk` "
+        assertEquals("ALTER TABLE `person` ADD CONSTRAINT `person_parent_id_fk` "
             + "FOREIGN KEY (`parent_id`) REFERENCES `parent`(`id`) ON DELETE CASCADE ON UPDATE CASCADE", e.capturedSql);
     }
 
@@ -139,18 +139,32 @@ class MariadbDdlExecutorTest {
         CapturingExecutor e = constraintExecutor();
 
         e.dropColumnConstraint(ConstraintType.PRIMARY_KEY, "ignored");
-        assertEquals("ALTER TABLE person DROP PRIMARY KEY", e.capturedSql);
+        assertEquals("ALTER TABLE `person` DROP PRIMARY KEY", e.capturedSql);
 
         e.dropColumnConstraint(ConstraintType.UNIQUE, "uq_email");
-        assertEquals("ALTER TABLE person DROP INDEX uq_email", e.capturedSql);
+        assertEquals("ALTER TABLE `person` DROP INDEX uq_email", e.capturedSql);
 
         e.dropColumnConstraint(ConstraintType.CHECK, "ck_age");
-        assertEquals("ALTER TABLE person DROP CHECK ck_age", e.capturedSql);
+        assertEquals("ALTER TABLE `person` DROP CHECK ck_age", e.capturedSql);
 
         e.dropColumnConstraint(ConstraintType.FOREIGN_KEY, "fk_parent");
-        assertEquals("ALTER TABLE person DROP FOREIGN KEY fk_parent", e.capturedSql);
+        assertEquals("ALTER TABLE `person` DROP FOREIGN KEY fk_parent", e.capturedSql);
 
         e.dropColumnConstraint(ConstraintType.NOT_NULL, "id");
-        assertEquals("ALTER TABLE person MODIFY `id` INT", e.capturedSql);
+        assertEquals("ALTER TABLE `person` MODIFY `id` INT", e.capturedSql);
+    }
+
+    @Test
+    void columnOperations_quoteTableAndColumnIdentifiers() throws Exception {
+        CapturingExecutor e = constraintExecutor();
+
+        e.dropColumn("email");
+        assertEquals("ALTER TABLE `person` DROP COLUMN `email`", e.capturedSql);
+
+        e.renameColumn("email", "mail");
+        assertEquals("ALTER TABLE `person` RENAME COLUMN `email` TO `mail`", e.capturedSql);
+
+        e.dropTable();
+        assertEquals("DROP TABLE `person`", e.capturedSql);
     }
 }

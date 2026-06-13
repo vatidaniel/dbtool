@@ -83,7 +83,7 @@ class PostgresDdlExecutorTest {
         String sql = executor.capturedSql;
 
         assertNotNull(sql);
-        assertTrue(sql.contains("ALTER TABLE person ALTER COLUMN \"name\" TYPE VARCHAR(255)"), sql);
+        assertTrue(sql.contains("ALTER TABLE \"person\" ALTER COLUMN \"name\" TYPE VARCHAR(255)"), sql);
         // must NOT use the MySQL MODIFY form
         assertTrue(!sql.contains("MODIFY"), sql);
     }
@@ -94,20 +94,20 @@ class PostgresDdlExecutorTest {
 
         // NOT NULL via ALTER COLUMN, not MySQL's MODIFY
         e.addColumnConstraint(ConstraintType.NOT_NULL, "id");
-        assertEquals("ALTER TABLE person ALTER COLUMN \"id\" SET NOT NULL", e.capturedSql);
+        assertEquals("ALTER TABLE \"person\" ALTER COLUMN \"id\" SET NOT NULL", e.capturedSql);
 
         // PK add shares the standard form (delegates to super)
         e.addColumnConstraint(ConstraintType.PRIMARY_KEY, "id");
-        assertEquals("ALTER TABLE person ADD PRIMARY KEY (\"id\")", e.capturedSql);
+        assertEquals("ALTER TABLE \"person\" ADD PRIMARY KEY (\"id\")", e.capturedSql);
 
         // every named constraint drops the same way
         e.dropColumnConstraint(ConstraintType.PRIMARY_KEY, "person_pkey");
-        assertEquals("ALTER TABLE person DROP CONSTRAINT person_pkey", e.capturedSql);
+        assertEquals("ALTER TABLE \"person\" DROP CONSTRAINT person_pkey", e.capturedSql);
 
         e.dropColumnConstraint(ConstraintType.FOREIGN_KEY, "person_parent_id_fk");
-        assertEquals("ALTER TABLE person DROP CONSTRAINT person_parent_id_fk", e.capturedSql);
+        assertEquals("ALTER TABLE \"person\" DROP CONSTRAINT person_parent_id_fk", e.capturedSql);
 
         e.dropColumnConstraint(ConstraintType.NOT_NULL, "id");
-        assertEquals("ALTER TABLE person ALTER COLUMN \"id\" DROP NOT NULL", e.capturedSql);
+        assertEquals("ALTER TABLE \"person\" ALTER COLUMN \"id\" DROP NOT NULL", e.capturedSql);
     }
 }

@@ -91,19 +91,19 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
 
     @Override
     public void dropTable() throws SQLException {
-        executeSql("DROP TABLE " + tableMetadata.getName());
+        executeSql("DROP TABLE " + backtickWrap(tableMetadata.getName()));
     }
 
     @Override
     public void renameTable(String newName) throws SQLException {
-        executeSql("RENAME TABLE " + tableMetadata.getName() + " TO " + newName);
+        executeSql("RENAME TABLE " + backtickWrap(tableMetadata.getName()) + " TO " + backtickWrap(newName));
         tableMetadata.setName(newName);
     }
 
     @Override
     public void addColumn(String columnName) throws SQLException {
         ColumnMetadata colMeta = getColumn(columnName);
-        String sql = ALTER_TABLE + tableMetadata.getName() + " ADD COLUMN " + buildColumnSql(colMeta) + " FIRST";
+        String sql = ALTER_TABLE + backtickWrap(tableMetadata.getName()) + " ADD COLUMN " + buildColumnSql(colMeta) + " FIRST";
         executeSql(sql);
     }
 
@@ -115,18 +115,19 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
 
     @Override
     public void dropColumn(String columnName) throws SQLException {
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " DROP COLUMN " + columnName);
+        executeSql(ALTER_TABLE + backtickWrap(tableMetadata.getName()) + " DROP COLUMN " + backtickWrap(columnName));
     }
 
     @Override
     public void renameColumn(String oldName, String newName) throws SQLException {
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " RENAME COLUMN " + oldName + " TO " + newName);
+        executeSql(ALTER_TABLE + backtickWrap(tableMetadata.getName()) + " RENAME COLUMN "
+            + backtickWrap(oldName) + " TO " + backtickWrap(newName));
     }
 
     @Override
     public void updateColumnDefinition(String columnName) throws SQLException {
         ColumnMetadata colM = getColumn(columnName);
-        String sql = ALTER_TABLE + tableMetadata.getName() + " MODIFY " + buildColumnSql(colM);
+        String sql = ALTER_TABLE + backtickWrap(tableMetadata.getName()) + " MODIFY " + buildColumnSql(colM);
         executeSql(sql);
     }
 
@@ -137,7 +138,7 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
             throw new UnsupportedOperationException("ClickHouse does not support " + constraintType + " constraints");
         }
         ColumnMetadata colMeta = getColumn(columnName);
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " ADD CONSTRAINT constraint_" + columnName
+        executeSql(ALTER_TABLE + backtickWrap(tableMetadata.getName()) + " ADD CONSTRAINT constraint_" + columnName
             + " CHECK " + columnName + SPACE + colMeta.getCheckConstraint());
     }
 
@@ -146,7 +147,7 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
         if (constraintType != ConstraintType.CHECK) {
             throw new UnsupportedOperationException("ClickHouse does not support " + constraintType + " constraints");
         }
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " DROP CONSTRAINT " + constraintName);
+        executeSql(ALTER_TABLE + backtickWrap(tableMetadata.getName()) + " DROP CONSTRAINT " + constraintName);
     }
 
     @Override

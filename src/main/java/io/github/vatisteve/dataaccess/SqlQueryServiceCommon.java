@@ -25,10 +25,6 @@ public class SqlQueryServiceCommon {
         this.dialect = dialect;
     }
 
-    public static String getInformationSchemaTableName(String tableName) {
-        return String.format("`%s`.`%s`", INFORMATION_SCHEMA, tableName);
-    }
-
     private String informationSchemaTable(String tableName) {
         return dialect.quoteIdentifier(INFORMATION_SCHEMA) + SqlQueryConstants.DOT + dialect.quoteIdentifier(tableName);
     }
