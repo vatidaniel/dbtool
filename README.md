@@ -10,7 +10,7 @@ consumed as a dependency (e.g. by a data-governance / ETL platform) rather than 
   paged data-fetch contract (`ExecuteDataService`).
 - **DDL execution** (`io.github.vatisteve.metadata`) — a dialect-agnostic `DdlExecutor` interface
   (create/drop/rename table, add/drop/modify columns and constraints) over a JDBC `Connection`, with
-  per-dialect implementations for **MariaDB** and **ClickHouse**.
+  per-dialect implementations for **MySQL/MariaDB**, **PostgreSQL**, and **ClickHouse**.
 - **Typed metadata model** — `TableMetadata` / `ColumnMetadata` and a `DataType` hierarchy
   (`MariadbDataType`, `ClickHouseDataType`) rooted at the `NUMERIC / STRING / TEMPORAL / SPATIAL`
   categories.
@@ -61,5 +61,19 @@ String sql = new BasicQuery()
 
 ## Adding a dialect
 
-Create a package under `metadata` with an executor that `extends DdlQueryConstants implements DdlExecutor`
-(see `metadata.mariadb` / `metadata.clickhouse`) and a `DataType` enum for the dialect's types.
+The relational DDL logic lives once in `metadata.core.StandardSqlDdlExecutor`; the parts that vary
+between databases are captured by the `SqlDialect` strategy (`io.github.vatisteve.dataaccess`):
+identifier quoting, the identity/auto-increment clause, the storage clause, and pagination. To add a
+standard relational database:
+
+1. Implement `SqlDialect` (see `MariadbDialect` / `PostgresDialect`).
+2. Add a thin `DdlExecutor` that extends `StandardSqlDdlExecutor` and passes your dialect (see
+   `metadata.mariadb.MariadbDdlExecutor` / `metadata.postgres.PostgresDdlExecutor`). Override a
+   `protected` hook such as `buildUpdateColumnDefinitionSql` only where the statement shape genuinely
+   differs.
+3. Add a `DataType` enum mapping the database's types to the `NUMERIC/STRING/TEMPORAL/SPATIAL` categories
+   (see `MariadbDataType` / `PostgresDataType`).
+
+`SqlQueryServiceCommon` also takes a `SqlDialect`, so read-side queries (`information_schema` access,
+pagination) follow the same dialect. Databases that diverge too far from standard SQL can implement
+`DdlExecutor` directly instead of extending `StandardSqlDdlExecutor` (see `metadata.clickhouse`).

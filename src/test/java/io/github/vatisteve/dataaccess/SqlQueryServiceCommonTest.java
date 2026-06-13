@@ -47,4 +47,13 @@ class SqlQueryServiceCommonTest {
         assertTrue(query.contains("'my_table'"), query);
         assertTrue(query.contains("NOT IN"), query);
     }
+
+    @Test
+    void describeColumnsNameQuery_usesDialectIdentifierQuoting() {
+        SqlQueryServiceCommon pg = new SqlQueryServiceCommon(new PostgresDialect());
+        String query = pg.describeColumnsNameQuery("my_schema", "my_table");
+        // PostgreSQL double-quotes identifiers instead of MySQL backticks
+        assertTrue(query.contains("\"information_schema\".\"columns\""), query);
+        assertTrue(!query.contains("`"), query);
+    }
 }
