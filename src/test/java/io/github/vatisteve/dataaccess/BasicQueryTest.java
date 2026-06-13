@@ -113,4 +113,18 @@ class BasicQueryTest {
         int where = query.indexOf("WHERE");
         assertTrue(select >= 0 && select < from && from < where, query);
     }
+
+    @Test
+    void toPreparedQuery_collectsWhereParametersInOrder() {
+        ParameterizedQuery pq = new BasicQuery()
+            .select("id")
+            .from("`users`")
+            .where(new BasicCriteria("age").equal(30).and(new BasicCriteria("city").in("NY", "LA")))
+            .paginate(10, 0)
+            .toPreparedQuery();
+        assertTrue(pq.getSql().contains("WHERE age = ?"), pq.getSql());
+        assertTrue(pq.getSql().contains("IN ( ?, ? )"), pq.getSql());
+        // pagination uses literal ints, so it contributes no parameters
+        assertEquals(java.util.Arrays.asList(30, "NY", "LA"), pq.getParameters());
+    }
 }

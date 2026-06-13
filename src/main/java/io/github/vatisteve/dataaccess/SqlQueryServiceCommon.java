@@ -42,6 +42,11 @@ public class SqlQueryServiceCommon {
         return String.valueOf(object);
     }
 
+    /**
+     * @deprecated inlines {@code schemaName}/{@code tableName}/{@code ignoredColumns} into the SQL text;
+     * use {@link #describeColumnsNameParameterizedQuery(String, String, String...)} instead.
+     */
+    @Deprecated
     public String describeColumnsNameQuery(String schemaName, String tableName, String... ignoredColumns) {
         return new BasicQuery().select(columnDescriptions)
             .from(informationSchemaTable(COLUMNS_TABLE))
@@ -49,6 +54,17 @@ public class SqlQueryServiceCommon {
                 .and("table_name").equalWithSingleQuote(tableName)
                 .and(new BasicCriteria("column_name").notInFormat(ignoredColumns).toCriteriaString()))
             .toQueryString();
+    }
+
+    /** Like {@link #describeColumnsNameQuery} but with the filter values bound as parameters. */
+    public ParameterizedQuery describeColumnsNameParameterizedQuery(String schemaName, String tableName, String... ignoredColumns) {
+        BasicCriteria criteria = new BasicCriteria("table_schema").equal(schemaName)
+            .and(new BasicCriteria("table_name").equal(tableName))
+            .and(new BasicCriteria("column_name").notIn((Object[]) ignoredColumns));
+        return new BasicQuery(dialect).select(columnDescriptions)
+            .from(informationSchemaTable(COLUMNS_TABLE))
+            .where(criteria)
+            .toPreparedQuery();
     }
 
     public String buildCountQuery(String tableName) {

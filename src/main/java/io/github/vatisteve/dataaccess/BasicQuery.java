@@ -25,6 +25,7 @@ public class BasicQuery extends SqlQueryConstants {
     private String whereClause;
     private final StringBuilder paginationClause = new StringBuilder();
     private final StringBuilder trailing = new StringBuilder();
+    private final List<Object> parameters = new ArrayList<>();
 
     public BasicQuery() {
         this(new MariadbDialect());
@@ -102,9 +103,10 @@ public class BasicQuery extends SqlQueryConstants {
         return this;
     }
 
-    // Where ...
+    // Where ... (also collects the criteria's bound parameters in order)
     public BasicQuery where(BasicCriteria criteria) {
         whereClause = WHERE_KEYWORD + criteria.toCriteriaString() + SPACE;
+        parameters.addAll(criteria.parameters());
         return this;
     }
 
@@ -124,6 +126,11 @@ public class BasicQuery extends SqlQueryConstants {
     public BasicQuery paginate(int limit, long offset) {
         paginationClause.append(dialect.paginate(limit, offset));
         return this;
+    }
+
+    /** The query as SQL text plus the WHERE values bound to its {@code ?} placeholders, in order. */
+    public ParameterizedQuery toPreparedQuery() {
+        return new ParameterizedQuery(toQueryString(), parameters);
     }
 
     public String toQueryString() {
