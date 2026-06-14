@@ -101,7 +101,7 @@ public class MariadbDdlExecutor extends DdlQueryConstants implements DdlExecutor
             .append(REFERENCES).append(SPACE).append(ref.getTableName()).append(OPEN_BRACKET)
             .append(ref.getColumnName()).append(CLOSE_BRACKET);
         if (ref.getOnDelete() != null) sql.append(" ON DELETE ").append(ref.getOnDelete().getLabel().toUpperCase());
-        if (ref.getOnUpdate() != null) sql.append(" ON UPDATE ").append(ref.getOnDelete().getLabel().toUpperCase());
+        if (ref.getOnUpdate() != null) sql.append(" ON UPDATE ").append(ref.getOnUpdate().getLabel().toUpperCase());
     }
 
     @Override

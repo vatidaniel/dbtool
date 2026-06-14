@@ -1,5 +1,6 @@
 package io.github.vatisteve.dataaccess;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class SqlQueryServiceCommon {
     }
 
     public String buildFetchDataWithCountQuery(String tableName, String[] columnNames, int limit, long offset) {
-        List<String> columnsNameWithCountFormat = Arrays.asList(columnNames);
+        List<String> columnsNameWithCountFormat = new ArrayList<>(Arrays.asList(columnNames));
         columnsNameWithCountFormat.add(String.format(SqlQueryConstants.COUNT_FUNCTION_FORMAT, ""));
         return new BasicQuery().select(columnsNameWithCountFormat.toArray(new String[0]))
             .from(tableName).limit(limit).offset(offset).toQueryString();
