@@ -24,10 +24,26 @@ consumed as a dependency (e.g. by a data-governance / ETL platform) rather than 
 ## Build & test
 
 ```bash
-mvn clean install              # build + install to local repo
-mvn test                       # run the JUnit 5 unit tests (no Docker needed)
-mvn -Pintegration-tests test   # also run Testcontainers integration tests (requires Docker)
+mvn clean install                # build + install to local repo
+mvn test                         # run the JUnit 5 unit tests (no Docker needed)
+mvn -Pintegration-tests verify   # also run Testcontainers integration tests (requires Docker)
 ```
+
+### Integration tests
+
+The `integration-tests` profile runs the `*IT` classes under `src/integration-test/java` with the
+Maven Failsafe plugin (hence `verify`, not `test`). They spin up real databases via
+[Testcontainers](https://java.testcontainers.org/) — PostgreSQL, MySQL/MariaDB, SQL Server and
+ClickHouse — and execute the generated DDL against them, so a running Docker daemon is required. The
+SQL Server image is large (~1.5 GB) and is pulled on first run.
+
+The profile pins the Docker Remote API version (`api.version=1.43`) because the bundled docker-java
+client otherwise probes with `v1.32`, which Docker Engine 25+ (minimum API 1.40) rejects.
+
+> **Windows + Docker Desktop:** docker-java cannot talk to Docker Desktop over the Windows named pipe
+> on current versions. Enable **Settings → General → "Expose daemon on tcp://localhost:2375 without
+> TLS"** and run with `DOCKER_HOST=tcp://127.0.0.1:2375`. On Linux/macOS the default socket works with
+> no extra configuration.
 
 ## Usage
 
