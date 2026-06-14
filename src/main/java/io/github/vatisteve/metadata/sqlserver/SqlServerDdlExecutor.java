@@ -21,7 +21,7 @@ import java.sql.SQLException;
 public class SqlServerDdlExecutor extends StandardSqlDdlExecutor {
 
     public SqlServerDdlExecutor(TableMetadata tableMetadata, Connection connection) {
-        super(tableMetadata, connection, new SqlServerDialect());
+        super(tableMetadata, connection, SqlServerDialect.INSTANCE);
     }
 
     @Override
@@ -34,14 +34,15 @@ public class SqlServerDdlExecutor extends StandardSqlDdlExecutor {
 
     @Override
     public void renameTable(String newName) throws SQLException {
-        // sp_rename takes string literals, not bracketed identifiers.
-        executeSql("EXEC sp_rename '" + getTableMetadata().getName() + "', '" + newName + "'");
+        // sp_rename takes string literals, not bracketed identifiers; quote/escape them as literals.
+        executeSql("EXEC sp_rename " + singleQuoteWrap(getTableMetadata().getName()) + ", " + singleQuoteWrap(newName));
         getTableMetadata().setName(newName);
     }
 
     @Override
     public void renameColumn(String oldName, String newName) throws SQLException {
-        executeSql("EXEC sp_rename '" + getTableMetadata().getName() + "." + oldName + "', '" + newName + "', 'COLUMN'");
+        executeSql("EXEC sp_rename " + singleQuoteWrap(getTableMetadata().getName() + "." + oldName)
+            + ", " + singleQuoteWrap(newName) + ", 'COLUMN'");
     }
 
     @Override

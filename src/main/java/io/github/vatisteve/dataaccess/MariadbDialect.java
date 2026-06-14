@@ -9,6 +9,9 @@ package io.github.vatisteve.dataaccess;
  */
 public class MariadbDialect implements SqlDialect {
 
+    /** Shared instance; the dialect is stateless, so a single instance can be reused. */
+    public static final MariadbDialect INSTANCE = new MariadbDialect();
+
     @Override
     public String quoteIdentifier(String identifier) {
         return SqlQueryConstants.backtickWrap(identifier);

@@ -14,12 +14,12 @@ public class SqlQueryServiceCommon {
     public static final String INFORMATION_SCHEMA = "information_schema";
     public static final String COLUMNS_TABLE = "columns";
 
-    protected static final String[] columnDescriptions = {"ordinal_position", "column_name", "data_type"};
+    private static final String[] columnDescriptions = {"ordinal_position", "column_name", "data_type"};
 
     private final SqlDialect dialect;
 
     public SqlQueryServiceCommon() {
-        this(new MariadbDialect());
+        this(MariadbDialect.INSTANCE);
     }
 
     public SqlQueryServiceCommon(SqlDialect dialect) {

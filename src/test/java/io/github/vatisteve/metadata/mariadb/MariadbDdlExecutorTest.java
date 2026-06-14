@@ -93,6 +93,23 @@ class MariadbDdlExecutorTest {
     }
 
     @Test
+    void createTable_escapesEmbeddedQuoteInStringDefault() throws Exception {
+        ColumnMetadata name = ColumnMetadata.builder()
+            .name("name").dataType("VARCHAR").dataTypeExtension("255")
+            .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
+                .dataType(MariadbDataType.VARCHAR).value("O'Brien").build())
+            .build();
+        TableMetadata table = TableMetadata.builder()
+            .name("t").columnsMetadata(List.of(name)).build();
+
+        CapturingExecutor e = new CapturingExecutor(table);
+        e.createTable();
+
+        // the embedded single quote is doubled, not left to terminate the literal early
+        assertTrue(e.capturedSql.contains("DEFAULT 'O''Brien'"), e.capturedSql);
+    }
+
+    @Test
     void createTable_withNoColumns_throws() {
         TableMetadata table = TableMetadata.builder()
             .name("empty")

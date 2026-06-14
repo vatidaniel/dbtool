@@ -55,7 +55,12 @@ public interface DdlExecutor extends AutoCloseable {
             action.run();
             connection.commit();
         } catch (SQLException | RuntimeException e) {
-            connection.rollback();
+            // A failing rollback must not mask the original failure that triggered it.
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackEx) {
+                e.addSuppressed(rollbackEx);
+            }
             throw e;
         } finally {
             connection.setAutoCommit(previousAutoCommit);

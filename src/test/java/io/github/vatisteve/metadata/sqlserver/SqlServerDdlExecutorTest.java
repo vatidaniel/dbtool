@@ -74,6 +74,19 @@ class SqlServerDdlExecutorTest {
     }
 
     @Test
+    void renameColumn_escapesSingleQuotesInLiterals() throws Exception {
+        TableMetadata table = TableMetadata.builder().name("per'son").columnsMetadata(List.of(
+            ColumnMetadata.builder().name("na'me").dataType("INT").build()
+        )).build();
+        CapturingExecutor e = new CapturingExecutor(table);
+        // embedded quotes are doubled so they cannot break out of the sp_rename string literals
+        e.renameColumn("na'me", "ful'l");
+        assertEquals("EXEC sp_rename 'per''son.na''me', 'ful''l', 'COLUMN'", e.capturedSql);
+        e.renameTable("peo'ple");
+        assertEquals("EXEC sp_rename 'per''son', 'peo''ple'", e.capturedSql);
+    }
+
+    @Test
     void constraints_useSqlServerForms() throws Exception {
         CapturingExecutor e = new CapturingExecutor(personTable());
 

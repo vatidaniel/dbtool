@@ -10,6 +10,9 @@ package io.github.vatisteve.dataaccess;
  */
 public class SqlServerDialect implements SqlDialect {
 
+    /** Shared instance; the dialect is stateless, so a single instance can be reused. */
+    public static final SqlServerDialect INSTANCE = new SqlServerDialect();
+
     @Override
     public String quoteIdentifier(String identifier) {
         return SqlQueryConstants.quoteIdentifier(identifier, "[", "]");

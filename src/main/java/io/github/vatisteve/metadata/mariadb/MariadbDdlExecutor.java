@@ -16,7 +16,7 @@ import java.sql.Connection;
 public class MariadbDdlExecutor extends StandardSqlDdlExecutor {
 
     public MariadbDdlExecutor(TableMetadata tableMetadata, Connection connection) {
-        super(tableMetadata, connection, new MariadbDialect());
+        super(tableMetadata, connection, MariadbDialect.INSTANCE);
     }
 
 }

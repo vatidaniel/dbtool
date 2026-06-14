@@ -19,7 +19,7 @@ import java.sql.Connection;
 public class PostgresDdlExecutor extends StandardSqlDdlExecutor {
 
     public PostgresDdlExecutor(TableMetadata tableMetadata, Connection connection) {
-        super(tableMetadata, connection, new PostgresDialect());
+        super(tableMetadata, connection, PostgresDialect.INSTANCE);
     }
 
     @Override

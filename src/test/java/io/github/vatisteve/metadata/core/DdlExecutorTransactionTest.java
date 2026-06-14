@@ -45,6 +45,27 @@ class DdlExecutorTransactionTest {
         assertEquals(Arrays.asList("setAutoCommit:false", "action", "rollback", "setAutoCommit:true"), calls);
     }
 
+    @Test
+    void runInTransaction_failingRollback_doesNotMaskOriginalFailure() {
+        Connection connection = (Connection) Proxy.newProxyInstance(
+            DdlExecutorTransactionTest.class.getClassLoader(),
+            new Class[]{Connection.class},
+            (proxy, method, args) -> {
+                if ("getAutoCommit".equals(method.getName())) return true;
+                if ("rollback".equals(method.getName())) throw new SQLException("rollback failed");
+                return null;
+            });
+        DdlExecutor executor = executorWith(connection);
+
+        SQLException thrown = assertThrows(SQLException.class,
+            () -> executor.runInTransaction(() -> { throw new SQLException("original"); }));
+
+        // the original failure propagates; the rollback failure is attached as suppressed, not masking it
+        assertEquals("original", thrown.getMessage());
+        assertEquals(1, thrown.getSuppressed().length);
+        assertEquals("rollback failed", thrown.getSuppressed()[0].getMessage());
+    }
+
     /** A Connection proxy that records the transaction calls and reports auto-commit on by default. */
     private static Connection fakeConnection(List<String> calls) {
         return (Connection) Proxy.newProxyInstance(
