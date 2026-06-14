@@ -15,8 +15,22 @@ public class SqlQueryServiceCommon {
 
     protected static final String[] columnDescriptions = {"ordinal_position", "column_name", "data_type"};
 
+    private final SqlDialect dialect;
+
+    public SqlQueryServiceCommon() {
+        this(new MariadbDialect());
+    }
+
+    public SqlQueryServiceCommon(SqlDialect dialect) {
+        this.dialect = dialect;
+    }
+
     public static String getInformationSchemaTableName(String tableName) {
         return String.format("`%s`.`%s`", INFORMATION_SCHEMA, tableName);
+    }
+
+    private String informationSchemaTable(String tableName) {
+        return dialect.quoteIdentifier(INFORMATION_SCHEMA) + SqlQueryConstants.DOT + dialect.quoteIdentifier(tableName);
     }
 
     /**
@@ -29,7 +43,7 @@ public class SqlQueryServiceCommon {
 
     public String describeColumnsNameQuery(String schemaName, String tableName, String... ignoredColumns) {
         return new BasicQuery().select(columnDescriptions)
-            .from(getInformationSchemaTableName(COLUMNS_TABLE))
+            .from(informationSchemaTable(COLUMNS_TABLE))
             .where(new BasicCriteria("table_schema").equalWithSingleQuote(schemaName)
                 .and("table_name").equalWithSingleQuote(tableName)
                 .and(new BasicCriteria("column_name").notInFormat(ignoredColumns).toCriteriaString()))
@@ -41,13 +55,14 @@ public class SqlQueryServiceCommon {
     }
 
     public String buildFetchDataQuery(String tableName, String[] columnNames, int limit, long offset) {
-        return new BasicQuery().select(columnNames).from(tableName).limit(limit).offset(offset).toQueryString();
+        return new BasicQuery(dialect).select(columnNames).from(tableName)
+            .paginate(limit, offset).toQueryString();
     }
 
     public String buildFetchDataWithCountQuery(String tableName, String[] columnNames, int limit, long offset) {
         List<String> columnsNameWithCountFormat = new ArrayList<>(Arrays.asList(columnNames));
         columnsNameWithCountFormat.add(String.format(SqlQueryConstants.COUNT_FUNCTION_FORMAT, ""));
-        return new BasicQuery().select(columnsNameWithCountFormat.toArray(new String[0]))
-            .from(tableName).limit(limit).offset(offset).toQueryString();
+        return new BasicQuery(dialect).select(columnsNameWithCountFormat.toArray(new String[0]))
+            .from(tableName).paginate(limit, offset).toQueryString();
     }
 }

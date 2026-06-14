@@ -47,4 +47,25 @@ class SqlQueryServiceCommonTest {
         assertTrue(query.contains("'my_table'"), query);
         assertTrue(query.contains("NOT IN"), query);
     }
+
+    @Test
+    void describeColumnsNameQuery_usesDialectIdentifierQuoting() {
+        SqlQueryServiceCommon pg = new SqlQueryServiceCommon(new PostgresDialect());
+        String query = pg.describeColumnsNameQuery("my_schema", "my_table");
+        // PostgreSQL double-quotes identifiers instead of MySQL backticks
+        assertTrue(query.contains("\"information_schema\".\"columns\""), query);
+        assertTrue(!query.contains("`"), query);
+    }
+
+    @Test
+    void fetchAndDescribe_followSqlServerDialect() {
+        SqlQueryServiceCommon ss = new SqlQueryServiceCommon(new SqlServerDialect());
+        // pagination uses OFFSET/FETCH, not LIMIT/OFFSET
+        String fetch = ss.buildFetchDataQuery("[t]", new String[]{"[id]"}, 10, 20);
+        assertTrue(fetch.contains("OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY"), fetch);
+        assertTrue(!fetch.contains("LIMIT"), fetch);
+        // identifiers use bracket quoting
+        String describe = ss.describeColumnsNameQuery("my_schema", "my_table");
+        assertTrue(describe.contains("[information_schema].[columns]"), describe);
+    }
 }

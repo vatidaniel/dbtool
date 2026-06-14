@@ -38,7 +38,8 @@ class MariadbDdlExecutorTest {
     @Test
     void createTable_foreignKey_usesDistinctOnDeleteAndOnUpdate() throws Exception {
         // Regression for the bug where ON UPDATE re-used the ON DELETE action.
-        ReferenceMetadata ref = new ReferenceMetadata("`parent`", "`id`",
+        // Referenced names are passed raw; the executor quotes them via the dialect.
+        ReferenceMetadata ref = new ReferenceMetadata("parent", "id",
             ReferenceActionType.CASCADE, ReferenceActionType.SET_NULL);
         ColumnMetadata fkColumn = ColumnMetadata.builder()
             .name("parent_id")
@@ -55,7 +56,7 @@ class MariadbDdlExecutorTest {
         String sql = executor.capturedSql;
 
         assertNotNull(sql);
-        assertTrue(sql.contains("FOREIGN KEY"), sql);
+        assertTrue(sql.contains("FOREIGN KEY (`parent_id`) REFERENCES `parent`(`id`)"), sql);
         assertTrue(sql.contains("ON DELETE CASCADE"), sql);
         assertTrue(sql.contains("ON UPDATE SET NULL"), sql);
     }
