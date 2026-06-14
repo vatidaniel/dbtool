@@ -75,7 +75,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
     }
 
     protected void appendColumnSql(StringBuilder sql, ColumnMetadata c) {
-        sql.append(dialect.quoteIdentifier(c.getName())).append(SPACE).append(c.getDataType());
+        sql.append(dialect.quoteIdentifier(c.getName())).append(SPACE).append(c.getDataTypeDefinition());
         if (!c.isNullable()) sql.append(" NOT NULL ");
         if (c.isIdentity()) sql.append(dialect.autoIncrementClause());
         if (c.getColumnDefault() != null) appendDefaultColumnValue(sql, c.getColumnDefault());
@@ -224,7 +224,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
                 return ALTER_TABLE + table + " ADD CONSTRAINT " + constraintName(constraintType, column)
                     + " CHECK " + roundBracketWrap(col + SPACE + column.getCheckConstraint());
             case NOT_NULL:
-                return ALTER_TABLE + table + " MODIFY " + col + SPACE + column.getDataType() + " NOT NULL";
+                return ALTER_TABLE + table + " MODIFY " + col + SPACE + column.getDataTypeDefinition() + " NOT NULL";
             default:
                 throw new UnsupportedOperationException("Unsupported constraint type: " + constraintType);
         }
@@ -249,7 +249,7 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
             case NOT_NULL: {
                 ColumnMetadata column = getColumnMetadata(name);
                 return ALTER_TABLE + table + " MODIFY " + dialect.quoteIdentifier(column.getName())
-                    + SPACE + column.getDataType();
+                    + SPACE + column.getDataTypeDefinition();
             }
             default:
                 throw new UnsupportedOperationException("Unsupported constraint type: " + constraintType);

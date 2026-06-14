@@ -2,6 +2,7 @@ package io.github.vatisteve.it;
 
 import io.github.vatisteve.metadata.core.ColumnMetadata;
 import io.github.vatisteve.metadata.core.TableMetadata;
+import io.github.vatisteve.metadata.postgres.PostgresDataType;
 import io.github.vatisteve.metadata.postgres.PostgresDdlExecutor;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -36,8 +37,8 @@ class PostgresDdlExecutorIT {
     void createTableThenAddColumn_runAgainstRealPostgres() throws Exception {
         try (Connection conn = connect()) {
             TableMetadata create = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("id").dataType("INTEGER").primaryKey(true).nullable(false).identity(true).build(),
-                ColumnMetadata.builder().name("name").dataType("VARCHAR").dataTypeExtension("100").build()
+                ColumnMetadata.builder().name("id").dataType(PostgresDataType.INTEGER).primaryKey(true).nullable(false).identity(true).build(),
+                ColumnMetadata.builder().name("name").dataType(PostgresDataType.VARCHAR).dataTypeExtension("100").build()
             )).build();
             new PostgresDdlExecutor(create, conn).createTable();
 
@@ -45,7 +46,7 @@ class PostgresDdlExecutorIT {
             assertTrue(columnExists(conn, "person", "name"), "name column should exist");
 
             TableMetadata withEmail = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("email").dataType("VARCHAR").dataTypeExtension("255").build()
+                ColumnMetadata.builder().name("email").dataType(PostgresDataType.VARCHAR).dataTypeExtension("255").build()
             )).build();
             new PostgresDdlExecutor(withEmail, conn).addColumn("email");
 

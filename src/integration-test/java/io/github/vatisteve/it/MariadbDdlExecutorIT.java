@@ -2,6 +2,7 @@ package io.github.vatisteve.it;
 
 import io.github.vatisteve.metadata.core.ColumnMetadata;
 import io.github.vatisteve.metadata.core.TableMetadata;
+import io.github.vatisteve.metadata.mariadb.MariadbDataType;
 import io.github.vatisteve.metadata.mariadb.MariadbDdlExecutor;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MySQLContainer;
@@ -36,8 +37,8 @@ class MariadbDdlExecutorIT {
     void createTableThenAddColumn_runAgainstRealMysql() throws Exception {
         try (Connection conn = connect()) {
             TableMetadata create = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("id").dataType("INT").primaryKey(true).nullable(false).identity(true).build(),
-                ColumnMetadata.builder().name("name").dataType("VARCHAR").dataTypeExtension("100").build()
+                ColumnMetadata.builder().name("id").dataType(MariadbDataType.INT).primaryKey(true).nullable(false).identity(true).build(),
+                ColumnMetadata.builder().name("name").dataType(MariadbDataType.VARCHAR).dataTypeExtension("100").build()
             )).build();
             new MariadbDdlExecutor(create, conn).createTable();
 
@@ -45,7 +46,7 @@ class MariadbDdlExecutorIT {
             assertTrue(columnExists(conn, "person", "name"), "name column should exist");
 
             TableMetadata withEmail = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("email").dataType("VARCHAR").dataTypeExtension("255").build()
+                ColumnMetadata.builder().name("email").dataType(MariadbDataType.VARCHAR).dataTypeExtension("255").build()
             )).build();
             new MariadbDdlExecutor(withEmail, conn).addColumn("email");
 

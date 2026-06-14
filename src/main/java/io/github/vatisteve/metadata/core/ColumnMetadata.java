@@ -19,7 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 public class ColumnMetadata {
 
     protected String name;
-    protected String dataType;
+    protected DataType dataType;
     protected String dataTypeExtension;
     protected boolean identity;
     /**
@@ -62,9 +62,15 @@ public class ColumnMetadata {
         }
     }
 
-    public String getDataType() {
-        if (StringUtils.isBlank(dataTypeExtension)) return dataType;
-        return dataType + SqlQueryConstants.roundBracketWrap(dataTypeExtension);
+    /**
+     * The full column type as it appears in SQL: the {@link #dataType} keyword plus the optional
+     * {@link #dataTypeExtension} (e.g. {@code VARCHAR} + {@code 255} -&gt; {@code VARCHAR(255)}).
+     * Use this when emitting DDL; {@link #getDataType()} returns the typed {@link DataType} itself.
+     */
+    public String getDataTypeDefinition() {
+        if (dataType == null) return null;
+        if (StringUtils.isBlank(dataTypeExtension)) return dataType.getKeyWord();
+        return dataType.getKeyWord() + SqlQueryConstants.roundBracketWrap(dataTypeExtension);
     }
 
 }

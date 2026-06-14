@@ -33,10 +33,10 @@ class ClickHouseDdlExecutorTest {
     @Test
     void createTable_wrapsNullableColumnsAndDefaultsEngineToMergeTree() throws Exception {
         ColumnMetadata id = ClickHouseColumnMetadata.builder()
-            .name("id").dataType("Int64").nullable(false).primaryKey(true).orderByIndex(1)
+            .name("id").dataType(ClickHouseDataType.INT_64).nullable(false).primaryKey(true).orderByIndex(1)
             .build();
         ColumnMetadata name = ClickHouseColumnMetadata.builder()
-            .name("name").dataType("String").nullable(true)
+            .name("name").dataType(ClickHouseDataType.CH_STRING).nullable(true)
             .build();
         TableMetadata table = TableMetadata.builder()
             .name("events")
@@ -60,7 +60,7 @@ class ClickHouseDdlExecutorTest {
     @Test
     void createTable_honorsExplicitTablespaceAsEngine() throws Exception {
         ColumnMetadata col = ClickHouseColumnMetadata.builder()
-            .name("v").dataType("String").nullable(false)
+            .name("v").dataType(ClickHouseDataType.CH_STRING).nullable(false)
             .build();
         TableMetadata table = TableMetadata.builder()
             .name("t")
@@ -76,7 +76,7 @@ class ClickHouseDdlExecutorTest {
 
     private CapturingExecutor checkExecutor() {
         ColumnMetadata age = ClickHouseColumnMetadata.builder()
-            .name("age").dataType("Int32").checkConstraint("> 0").build();
+            .name("age").dataType(ClickHouseDataType.INT_32).checkConstraint("> 0").build();
         return new CapturingExecutor(TableMetadata.builder()
             .name("person").columnsMetadata(List.of(age)).build());
     }

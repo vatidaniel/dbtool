@@ -46,7 +46,7 @@ class MariadbDdlExecutorTest {
             ReferenceActionType.CASCADE, ReferenceActionType.SET_NULL);
         ColumnMetadata fkColumn = ColumnMetadata.builder()
             .name("parent_id")
-            .dataType("INT")
+            .dataType(MariadbDataType.INT)
             .referenceMetadata(ref)
             .build();
         TableMetadata table = TableMetadata.builder()
@@ -67,10 +67,10 @@ class MariadbDdlExecutorTest {
     @Test
     void createTable_emitsColumnPrimaryKeyAndTypedDefault() throws Exception {
         ColumnMetadata id = ColumnMetadata.builder()
-            .name("id").dataType("INT").primaryKey(true).nullable(false).identity(true)
+            .name("id").dataType(MariadbDataType.INT).primaryKey(true).nullable(false).identity(true)
             .build();
         ColumnMetadata name = ColumnMetadata.builder()
-            .name("name").dataType("VARCHAR").dataTypeExtension("255")
+            .name("name").dataType(MariadbDataType.VARCHAR).dataTypeExtension("255")
             .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
                 .dataType(MariadbDataType.VARCHAR).value("unknown").build())
             .build();
@@ -95,7 +95,7 @@ class MariadbDdlExecutorTest {
     @Test
     void createTable_escapesEmbeddedQuoteInStringDefault() throws Exception {
         ColumnMetadata name = ColumnMetadata.builder()
-            .name("name").dataType("VARCHAR").dataTypeExtension("255")
+            .name("name").dataType(MariadbDataType.VARCHAR).dataTypeExtension("255")
             .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
                 .dataType(MariadbDataType.VARCHAR).value("O'Brien").build())
             .build();
@@ -122,12 +122,12 @@ class MariadbDdlExecutorTest {
     @Test
     void createTable_quotesTemporalDefaultAndRendersNullDefault() throws Exception {
         ColumnMetadata created = ColumnMetadata.builder()
-            .name("created").dataType("DATETIME")
+            .name("created").dataType(MariadbDataType.DATETIME)
             .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
                 .dataType(MariadbDataType.DATETIME).value("2024-01-01 00:00:00").build())
             .build();
         ColumnMetadata note = ColumnMetadata.builder()
-            .name("note").dataType("VARCHAR").dataTypeExtension("50")
+            .name("note").dataType(MariadbDataType.VARCHAR).dataTypeExtension("50")
             .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
                 .dataType(MariadbDataType.VARCHAR).value(null).build())
             .build();
@@ -143,10 +143,10 @@ class MariadbDdlExecutorTest {
 
     private CapturingExecutor constraintExecutor() {
         return new CapturingExecutor(TableMetadata.builder().name("person").columnsMetadata(List.of(
-            ColumnMetadata.builder().name("id").dataType("INT").build(),
-            ColumnMetadata.builder().name("age").dataType("INT").checkConstraint("> 0").build(),
-            ColumnMetadata.builder().name("email").dataType("VARCHAR").dataTypeExtension("255").build(),
-            ColumnMetadata.builder().name("parent_id").dataType("INT")
+            ColumnMetadata.builder().name("id").dataType(MariadbDataType.INT).build(),
+            ColumnMetadata.builder().name("age").dataType(MariadbDataType.INT).checkConstraint("> 0").build(),
+            ColumnMetadata.builder().name("email").dataType(MariadbDataType.VARCHAR).dataTypeExtension("255").build(),
+            ColumnMetadata.builder().name("parent_id").dataType(MariadbDataType.INT)
                 .referenceMetadata(new ReferenceMetadata("parent", "id",
                     ReferenceActionType.CASCADE, ReferenceActionType.CASCADE)).build()
         )).build());

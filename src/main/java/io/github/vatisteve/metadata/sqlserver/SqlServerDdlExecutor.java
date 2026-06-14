@@ -48,7 +48,7 @@ public class SqlServerDdlExecutor extends StandardSqlDdlExecutor {
     @Override
     protected String buildUpdateColumnDefinitionSql(ColumnMetadata columnMetadata) {
         return ALTER_TABLE + quotedTableName() + " ALTER COLUMN "
-            + getDialect().quoteIdentifier(columnMetadata.getName()) + SPACE + columnMetadata.getDataType();
+            + getDialect().quoteIdentifier(columnMetadata.getName()) + SPACE + columnMetadata.getDataTypeDefinition();
     }
 
     @Override
@@ -56,7 +56,7 @@ public class SqlServerDdlExecutor extends StandardSqlDdlExecutor {
         if (constraintType == ConstraintType.NOT_NULL) {
             // SQL Server toggles nullability by re-stating the column type via ALTER COLUMN.
             return ALTER_TABLE + quotedTableName() + " ALTER COLUMN "
-                + getDialect().quoteIdentifier(column.getName()) + SPACE + column.getDataType() + " NOT NULL";
+                + getDialect().quoteIdentifier(column.getName()) + SPACE + column.getDataTypeDefinition() + " NOT NULL";
         }
         return super.buildAddConstraintSql(constraintType, column);
     }
@@ -66,7 +66,7 @@ public class SqlServerDdlExecutor extends StandardSqlDdlExecutor {
         if (constraintType == ConstraintType.NOT_NULL) {
             ColumnMetadata column = getColumnMetadata(name);
             return ALTER_TABLE + quotedTableName() + " ALTER COLUMN "
-                + getDialect().quoteIdentifier(column.getName()) + SPACE + column.getDataType() + " NULL";
+                + getDialect().quoteIdentifier(column.getName()) + SPACE + column.getDataTypeDefinition() + " NULL";
         }
         // SQL Server drops every named constraint (PK/UNIQUE/CHECK/FK) the same way.
         return ALTER_TABLE + quotedTableName() + " DROP CONSTRAINT " + name;

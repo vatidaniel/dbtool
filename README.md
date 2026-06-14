@@ -53,15 +53,26 @@ Generate a `CREATE TABLE` statement from metadata:
 TableMetadata table = TableMetadata.builder()
     .name("person")
     .columnsMetadata(List.of(
-        ColumnMetadata.builder().name("id").dataType("INT")
+        ColumnMetadata.builder().name("id").dataType(MariadbDataType.INT)
             .primaryKey(true).nullable(false).identity(true).build(),
-        ColumnMetadata.builder().name("name").dataType("VARCHAR").dataTypeExtension("255").build()))
+        ColumnMetadata.builder().name("name").dataType(MariadbDataType.VARCHAR).dataTypeExtension("255").build()))
     .build();
 
 try (DdlExecutor ddl = new MariadbDdlExecutor(table, connection)) {
     ddl.createTable();
 }
 ```
+
+A column's type is the typed `DataType` (e.g. `MariadbDataType.VARCHAR`, `PostgresDataType.INTEGER`),
+which also carries the `NUMERIC / STRING / TEMPORAL / SPATIAL` category. For a type that has no enum
+constant yet (a vendor-specific or newly added type) use the raw escape hatch:
+
+```java
+ColumnMetadata.builder().name("embedding").dataType(DataType.of("VECTOR")).dataTypeExtension("768").build();
+```
+
+`ColumnMetadata.getDataType()` returns the typed `DataType`; `getDataTypeDefinition()` returns the
+rendered SQL fragment (the keyword plus any `dataTypeExtension`, e.g. `VARCHAR(255)`).
 
 The executor uses the `Connection` you pass in but does **not** close it — the caller owns the
 connection's lifecycle (`close()` is a no-op kept only for try-with-resources convenience).

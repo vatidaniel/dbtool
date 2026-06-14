@@ -3,6 +3,7 @@ package io.github.vatisteve.it;
 import io.github.vatisteve.metadata.core.ColumnMetadata;
 import io.github.vatisteve.metadata.core.ConstraintType;
 import io.github.vatisteve.metadata.core.TableMetadata;
+import io.github.vatisteve.metadata.sqlserver.SqlServerDataType;
 import io.github.vatisteve.metadata.sqlserver.SqlServerDdlExecutor;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MSSQLServerContainer;
@@ -42,8 +43,8 @@ class SqlServerDdlExecutorIT {
     void createTableAlterColumnAndRename_runAgainstRealSqlServer() throws Exception {
         try (Connection conn = connect()) {
             TableMetadata create = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("id").dataType("INT").primaryKey(true).nullable(false).identity(true).build(),
-                ColumnMetadata.builder().name("name").dataType("VARCHAR").dataTypeExtension("100").build()
+                ColumnMetadata.builder().name("id").dataType(SqlServerDataType.INT).primaryKey(true).nullable(false).identity(true).build(),
+                ColumnMetadata.builder().name("name").dataType(SqlServerDataType.VARCHAR).dataTypeExtension("100").build()
             )).build();
             new SqlServerDdlExecutor(create, conn).createTable();
 
@@ -52,7 +53,7 @@ class SqlServerDdlExecutorIT {
 
             // ADD without the COLUMN keyword
             TableMetadata withEmail = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("email").dataType("VARCHAR").dataTypeExtension("255").build()
+                ColumnMetadata.builder().name("email").dataType(SqlServerDataType.VARCHAR).dataTypeExtension("255").build()
             )).build();
             new SqlServerDdlExecutor(withEmail, conn).addColumn("email");
             assertTrue(columnExists(conn, "person", "email"), "email column should exist after addColumn");

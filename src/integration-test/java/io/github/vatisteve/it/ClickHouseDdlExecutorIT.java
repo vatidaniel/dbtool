@@ -1,6 +1,7 @@
 package io.github.vatisteve.it;
 
 import io.github.vatisteve.metadata.clickhouse.ClickHouseColumnMetadata;
+import io.github.vatisteve.metadata.clickhouse.ClickHouseDataType;
 import io.github.vatisteve.metadata.clickhouse.ClickHouseDdlExecutor;
 import io.github.vatisteve.metadata.core.ColumnMetadata;
 import io.github.vatisteve.metadata.core.TableMetadata;
@@ -41,8 +42,8 @@ class ClickHouseDdlExecutorIT {
         try (Connection conn = connect()) {
             // id carries an ORDER BY index so the MergeTree engine has a sorting key
             TableMetadata create = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ClickHouseColumnMetadata.builder().name("id").dataType("Int32").nullable(false).primaryKey(true).orderByIndex(1).build(),
-                ColumnMetadata.builder().name("name").dataType("String").nullable(true).build()
+                ClickHouseColumnMetadata.builder().name("id").dataType(ClickHouseDataType.INT_32).nullable(false).primaryKey(true).orderByIndex(1).build(),
+                ColumnMetadata.builder().name("name").dataType(ClickHouseDataType.CH_STRING).nullable(true).build()
             )).build();
             new ClickHouseDdlExecutor(create, conn).createTable();
 
@@ -50,7 +51,7 @@ class ClickHouseDdlExecutorIT {
             assertTrue(columnExists(conn, "person", "name"), "name column should exist");
 
             TableMetadata withEmail = TableMetadata.builder().name("person").columnsMetadata(List.of(
-                ColumnMetadata.builder().name("email").dataType("String").nullable(true).build()
+                ColumnMetadata.builder().name("email").dataType(ClickHouseDataType.CH_STRING).nullable(true).build()
             )).build();
             new ClickHouseDdlExecutor(withEmail, conn).addColumn("email");
 

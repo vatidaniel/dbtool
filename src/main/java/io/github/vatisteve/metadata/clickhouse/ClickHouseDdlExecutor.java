@@ -60,8 +60,8 @@ public class ClickHouseDdlExecutor extends DdlQueryConstants implements DdlExecu
 
     private String buildColumnSql(ColumnMetadata col) {
         String result = backtickWrap(col.getName()) + SPACE;
-        if (col.isNullable()) result = result + " Nullable" + roundBracketWrap(col.getDataType()) + SPACE;
-        else result = result + SPACE + col.getDataType() + SPACE;
+        if (col.isNullable()) result = result + " Nullable" + roundBracketWrap(col.getDataTypeDefinition()) + SPACE;
+        else result = result + SPACE + col.getDataTypeDefinition() + SPACE;
         // ClickHouse does not support Identity, Unique constraints
         //
         if (col.getColumnDefault() != null) result = result + buildColumnDefault(col.getColumnDefault());

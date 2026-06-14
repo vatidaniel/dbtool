@@ -26,7 +26,7 @@ public class PostgresDdlExecutor extends StandardSqlDdlExecutor {
     protected String buildUpdateColumnDefinitionSql(ColumnMetadata columnMetadata) {
         // PostgreSQL changes a column's type with ALTER COLUMN ... TYPE ... rather than MySQL's MODIFY.
         return ALTER_TABLE + quotedTableName() + " ALTER COLUMN "
-            + getDialect().quoteIdentifier(columnMetadata.getName()) + " TYPE " + columnMetadata.getDataType();
+            + getDialect().quoteIdentifier(columnMetadata.getName()) + " TYPE " + columnMetadata.getDataTypeDefinition();
     }
 
     @Override

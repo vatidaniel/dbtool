@@ -35,15 +35,15 @@ class PostgresDdlExecutorTest {
 
     private TableMetadata personTable() {
         ColumnMetadata id = ColumnMetadata.builder()
-            .name("id").dataType("INTEGER").primaryKey(true).nullable(false).identity(true)
+            .name("id").dataType(PostgresDataType.INTEGER).primaryKey(true).nullable(false).identity(true)
             .build();
         ColumnMetadata name = ColumnMetadata.builder()
-            .name("name").dataType("VARCHAR").dataTypeExtension("255")
+            .name("name").dataType(PostgresDataType.VARCHAR).dataTypeExtension("255")
             .columnDefault(ColumnMetadata.DefaultColumnValue.builder()
                 .dataType(PostgresDataType.VARCHAR).value("unknown").build())
             .build();
         ColumnMetadata parentId = ColumnMetadata.builder()
-            .name("parent_id").dataType("INTEGER")
+            .name("parent_id").dataType(PostgresDataType.INTEGER)
             .referenceMetadata(new ReferenceMetadata("parent", "id",
                 ReferenceActionType.CASCADE, ReferenceActionType.SET_NULL))
             .build();
