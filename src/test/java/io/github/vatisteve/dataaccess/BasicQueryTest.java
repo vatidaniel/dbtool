@@ -52,6 +52,36 @@ class BasicQueryTest {
     }
 
     @Test
+    void multipleJoins_eachOnAttachesToItsJoin() {
+        String query = new BasicQuery()
+            .select("*")
+            .from("`a`")
+            .innerJoin("`b`").on("`a`", "`b`", "id")
+            .innerJoin("`c`").on("`a`.x = `c`.y")
+            .toQueryString();
+        assertTrue(query.contains("INNER JOIN `b`  ON `a`.id=`b`.id"), query);
+        assertTrue(query.contains("INNER JOIN `c`  ON `a`.x = `c`.y"), query);
+        // second join must appear after the first join's ON condition
+        assertTrue(query.indexOf("INNER JOIN `c`") > query.indexOf("`a`.id=`b`.id"), query);
+    }
+
+    @Test
+    void onBeforeInnerJoin_throwsQueryBuilderException() {
+        BasicQuery query = new BasicQuery().select("*").from("`a`");
+        assertThrows(QueryBuilderException.class, () -> query.on("`a`.id = `b`.id"));
+    }
+
+    @Test
+    void on_joinsOnDifferingColumnNames() {
+        String query = new BasicQuery()
+            .select("*")
+            .from("`a`")
+            .innerJoin("`b`").on("`a`", "id", "`b`", "a_id")
+            .toQueryString();
+        assertTrue(query.contains("`a`.id=`b`.a_id"), query);
+    }
+
+    @Test
     void emptyQuery_isEmptyString() {
         assertEquals("", new BasicQuery().toQueryString());
     }
@@ -68,5 +98,33 @@ class BasicQueryTest {
         String query = new BasicQuery(new SqlServerDialect()).select("*").from("[t]").paginate(10, 20).toQueryString();
         assertTrue(query.contains("OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY"), query);
         assertTrue(!query.contains("LIMIT"), query);
+    }
+
+    @Test
+    void clausesAssembleInSqlOrder_regardlessOfCallOrder() {
+        // Call clauses out of order; they must still render SELECT ... FROM ... WHERE ... in SQL order.
+        String query = new BasicQuery()
+            .where(new BasicCriteria("age").equalWithNumber(30))
+            .from("`users`")
+            .select("id")
+            .toQueryString();
+        int select = query.indexOf("SELECT");
+        int from = query.indexOf("FROM");
+        int where = query.indexOf("WHERE");
+        assertTrue(select >= 0 && select < from && from < where, query);
+    }
+
+    @Test
+    void toPreparedQuery_collectsWhereParametersInOrder() {
+        ParameterizedQuery pq = new BasicQuery()
+            .select("id")
+            .from("`users`")
+            .where(new BasicCriteria("age").equal(30).and(new BasicCriteria("city").in("NY", "LA")))
+            .paginate(10, 0)
+            .toPreparedQuery();
+        assertTrue(pq.getSql().contains("WHERE age = ?"), pq.getSql());
+        assertTrue(pq.getSql().contains("IN ( ?, ? )"), pq.getSql());
+        // pagination uses literal ints, so it contributes no parameters
+        assertEquals(java.util.Arrays.asList(30, "NY", "LA"), pq.getParameters());
     }
 }

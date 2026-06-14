@@ -44,6 +44,9 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
 
     @Override
     public void createTable() throws SQLException {
+        if (collectionNullSafe(tableMetadata.getColumnsMetadata()).isEmpty()) {
+            throw new IllegalStateException("Cannot create table " + tableMetadata.getName() + " without any column");
+        }
         StringBuilder sql = new StringBuilder("CREATE TABLE ").append(dialect.quoteIdentifier(tableMetadata.getName()))
             .append(OPEN_BRACKET).append(SPACE);
         List<String> prs = new ArrayList<>();
@@ -68,7 +71,6 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         removeTheLastComma(sql);
         sql.append(CLOSE_BRACKET);
         sql.append(dialect.tablespaceClause(tableMetadata.getTablespace()));
-        //...
         executeSql(sql.toString());
     }
 
@@ -85,6 +87,10 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
 
     private void appendDefaultColumnValue(StringBuilder sql, ColumnMetadata.DefaultColumnValue d) {
         sql.append(" DEFAULT ");
+        if (d.getValue() == null) {
+            sql.append(NULL.trim());
+            return;
+        }
         Optional.ofNullable(d.getDataType()).ifPresentOrElse(dt -> {
             if (dt instanceof DataType.BasicDataType) {
                 doAppendDefaultColumnValue(sql, d, (DataType.BasicDataType) dt);
@@ -100,13 +106,17 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         switch (basicDataType) {
             case STRING:
             case SPATIAL:
+            case TEMPORAL:
+                // string, spatial and temporal literals must be quoted; function defaults
+                // (e.g. CURRENT_TIMESTAMP) should be passed with a null dataType to stay unquoted
                 sql.append(singleQuoteWrap(d.getValue().toString()));
                 break;
             case NUMERIC:
-            case TEMPORAL:
                 sql.append(d.getValue().toString());
                 break;
-            default: //...
+            default:
+                // no other basic data-type categories exist; nothing to append
+                break;
         }
     }
 
@@ -120,21 +130,26 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
         if (ref.getOnUpdate() != null) sql.append(" ON UPDATE ").append(ref.getOnUpdate().getLabel().toUpperCase());
     }
 
+    /** The table name quoted for the active dialect; reuse wherever a statement references the table. */
+    protected String quotedTableName() {
+        return dialect.quoteIdentifier(tableMetadata.getName());
+    }
+
     @Override
     public void dropTable() throws SQLException {
-        executeSql("DROP TABLE " + tableMetadata.getName());
+        executeSql("DROP TABLE " + quotedTableName());
     }
 
     @Override
     public void renameTable(String newName) throws SQLException {
-        executeSql("RENAME TABLE " + tableMetadata.getName() + " TO " + newName);
+        executeSql("RENAME TABLE " + quotedTableName() + " TO " + dialect.quoteIdentifier(newName));
         tableMetadata.setName(newName);
     }
 
     @Override
     public void addColumn(String columnName) throws SQLException {
         ColumnMetadata columnMetadata = getColumnMetadata(columnName);
-        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(tableMetadata.getName()).append(" ADD COLUMN ");
+        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(quotedTableName()).append(" ADD COLUMN ");
         appendColumnSql(sql, columnMetadata);
         executeSql(sql.toString());
     }
@@ -142,17 +157,20 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
     protected ColumnMetadata getColumnMetadata(String columnName) {
         return collectionNullSafe(tableMetadata.getColumnsMetadata()).stream()
             .filter(c -> StringUtils.equals(c.getName(), columnName))
-            .findFirst().orElseThrow();
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "No column named '" + columnName + "' in table " + tableMetadata.getName()));
     }
 
     @Override
     public void dropColumn(String columnName) throws SQLException {
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " DROP COLUMN " + columnName);
+        executeSql(ALTER_TABLE + quotedTableName() + " DROP COLUMN " + dialect.quoteIdentifier(columnName));
     }
 
     @Override
     public void renameColumn(String oldName, String newName) throws SQLException {
-        executeSql(ALTER_TABLE + tableMetadata.getName() + " RENAME COLUMN " + oldName + " TO " + newName);
+        executeSql(ALTER_TABLE + quotedTableName() + " RENAME COLUMN "
+            + dialect.quoteIdentifier(oldName) + " TO " + dialect.quoteIdentifier(newName));
     }
 
     @Override
@@ -166,46 +184,89 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
      * (e.g. PostgreSQL's {@code ALTER COLUMN ... TYPE ...}) override this.
      */
     protected String buildUpdateColumnDefinitionSql(ColumnMetadata columnMetadata) {
-        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(tableMetadata.getName()).append(" MODIFY ");
+        StringBuilder sql = new StringBuilder(ALTER_TABLE).append(quotedTableName()).append(" MODIFY ");
         appendColumnSql(sql, columnMetadata);
         return sql.toString();
     }
 
     @Override
     public void addColumnConstraint(ConstraintType constraintType, String columnName) throws SQLException {
-        ColumnMetadata c = getColumnMetadata(columnName);
-        StringBuilder sql = new StringBuilder(ALTER_TABLE + tableMetadata.getName() + " ADD CONSTRAINT ");
-        switch (constraintType) {
-            case FOREIGN_KEY: {
-                appendForeignKeyConstraint(sql, columnName, c.getReferenceMetadata());
-                break;
-            }
-            case PRIMARY_KEY:
-            case CHECK:
-            case UNIQUE:
-            case NOT_NULL:
-                // implement for the rest of constraint types
-                throw new UnsupportedOperationException("Create " + constraintType + " constraint: The function has not been implemented yet!");
-        }
-        executeSql(sql.toString());
+        executeSql(buildAddConstraintSql(constraintType, getColumnMetadata(columnName)));
     }
 
     @Override
     public void dropColumnConstraint(ConstraintType constraintType, String constraintName) throws SQLException {
-        String sql = ALTER_TABLE + tableMetadata.getName() + " DROP ";
+        executeSql(buildDropConstraintSql(constraintType, constraintName));
+    }
+
+    /**
+     * Build an {@code ALTER TABLE ... ADD} constraint statement. Defaults are MySQL/MariaDB forms;
+     * dialects whose syntax differs (e.g. PostgreSQL's {@code ALTER COLUMN ... SET NOT NULL}) override
+     * this.
+     */
+    protected String buildAddConstraintSql(ConstraintType constraintType, ColumnMetadata column) {
+        String table = quotedTableName();
+        String col = dialect.quoteIdentifier(column.getName());
         switch (constraintType) {
             case FOREIGN_KEY: {
-                sql += FOREIGN_KEY + SPACE + constraintName;
-                break;
+                // Named constraint keeps the statement valid for both MySQL/MariaDB and PostgreSQL.
+                StringBuilder sql = new StringBuilder(ALTER_TABLE).append(table)
+                    .append(" ADD CONSTRAINT ").append(constraintName(constraintType, column)).append(SPACE);
+                appendForeignKeyConstraint(sql, column.getName(), column.getReferenceMetadata());
+                return sql.toString();
             }
             case PRIMARY_KEY:
-            case CHECK:
+                return ALTER_TABLE + table + " ADD PRIMARY KEY " + roundBracketWrap(col);
             case UNIQUE:
+                return ALTER_TABLE + table + " ADD CONSTRAINT " + constraintName(constraintType, column)
+                    + " UNIQUE " + roundBracketWrap(col);
+            case CHECK:
+                return ALTER_TABLE + table + " ADD CONSTRAINT " + constraintName(constraintType, column)
+                    + " CHECK " + roundBracketWrap(col + SPACE + column.getCheckConstraint());
             case NOT_NULL:
-                // implement for the rest of constraint types
-                throw new UnsupportedOperationException("Drop " + constraintType + " constraint: The function has not been implemented yet!");
+                return ALTER_TABLE + table + " MODIFY " + col + SPACE + column.getDataType() + " NOT NULL";
+            default:
+                throw new UnsupportedOperationException("Unsupported constraint type: " + constraintType);
         }
-        executeSql(sql);
+    }
+
+    /**
+     * Build an {@code ALTER TABLE ... DROP} constraint statement. Defaults are MySQL/MariaDB forms;
+     * dialects whose syntax differs (e.g. PostgreSQL's {@code DROP CONSTRAINT}) override this. For
+     * {@code NOT_NULL} the {@code name} argument is the column name.
+     */
+    protected String buildDropConstraintSql(ConstraintType constraintType, String name) {
+        String table = quotedTableName();
+        switch (constraintType) {
+            case FOREIGN_KEY:
+                return ALTER_TABLE + table + " DROP FOREIGN KEY " + name;
+            case PRIMARY_KEY:
+                return ALTER_TABLE + table + " DROP PRIMARY KEY";
+            case UNIQUE:
+                return ALTER_TABLE + table + " DROP INDEX " + name;
+            case CHECK:
+                return ALTER_TABLE + table + " DROP CHECK " + name;
+            case NOT_NULL: {
+                ColumnMetadata column = getColumnMetadata(name);
+                return ALTER_TABLE + table + " MODIFY " + dialect.quoteIdentifier(column.getName())
+                    + SPACE + column.getDataType();
+            }
+            default:
+                throw new UnsupportedOperationException("Unsupported constraint type: " + constraintType);
+        }
+    }
+
+    /** Generate a deterministic constraint name for adds that don't carry an explicit name. */
+    protected String constraintName(ConstraintType constraintType, ColumnMetadata column) {
+        String suffix;
+        switch (constraintType) {
+            case UNIQUE: suffix = "uq"; break;
+            case CHECK: suffix = "chk"; break;
+            case PRIMARY_KEY: suffix = "pk"; break;
+            case FOREIGN_KEY: suffix = "fk"; break;
+            default: suffix = "ct";
+        }
+        return dialect.quoteIdentifier(tableMetadata.getName() + "_" + column.getName() + "_" + suffix);
     }
 
     @Override
@@ -214,8 +275,9 @@ public class StandardSqlDdlExecutor extends DdlQueryConstants implements DdlExec
     }
 
     @Override
-    public void close() throws Exception {
-        connection.close();
+    public void close() {
+        // The Connection is supplied by the caller, who owns its lifecycle; this executor does not
+        // close it. close() is kept so the executor can still be used in a try-with-resources block.
     }
 
 }

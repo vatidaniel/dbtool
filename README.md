@@ -45,19 +45,30 @@ try (DdlExecutor ddl = new MariadbDdlExecutor(table, connection)) {
 }
 ```
 
-Build a query:
+The executor uses the `Connection` you pass in but does **not** close it — the caller owns the
+connection's lifecycle (`close()` is a no-op kept only for try-with-resources convenience).
+
+Build a query with bound values (preferred) and run it safely:
 
 ```java
-String sql = new BasicQuery()
+ParameterizedQuery pq = new BasicQuery()
     .select("id", "name")
     .from("`users`")
-    .where(new BasicCriteria("age").equalWithNumber(30))
-    .limit(10).offset(0)
-    .toQueryString();
+    .where(new BasicCriteria("age").equal(30).and(new BasicCriteria("city").in("NY", "LA")))
+    .paginate(10, 0)
+    .toPreparedQuery();              // SQL with ? placeholders + ordered values
+
+try (PreparedStatement ps = pq.prepare(connection);
+     ResultSet rs = ps.executeQuery()) {
+    // ...
+}
 ```
 
-> **Note:** the query/DDL builders concatenate raw strings and do **not** perform parameter binding or
-> identifier escaping. Only pass trusted or pre-validated input.
+> **Note:** prefer the bound value methods (`equal`, `in`, ...) plus `toPreparedQuery()` so values go
+> through a `PreparedStatement`. The older `*WithSingleQuote`/`*Format` methods and `toQueryString()`
+> inline values into the SQL text and are deprecated. **Identifiers** (table/column names) are quoted and
+> escaped per dialect but cannot be parameterized, so identifiers must still be trusted or validated; the
+> DDL side likewise builds raw SQL.
 
 ## Adding a dialect
 

@@ -60,8 +60,16 @@ public class SqlQueryConstants {
         return SINGLE_QUOTE + s + SINGLE_QUOTE;
     }
 
+    /**
+     * Wrap an identifier in the given delimiters, escaping any occurrence of the closing delimiter by
+     * doubling it (the SQL-standard escaping rule), e.g. {@code a`b} -&gt; {@code `a``b`}.
+     */
+    public static String quoteIdentifier(String identifier, String open, String close) {
+        return open + identifier.replace(close, close + close) + close;
+    }
+
     public static String backtickWrap(String s) {
-        return BACKTICK + s + BACKTICK;
+        return quoteIdentifier(s, BACKTICK, BACKTICK);
     }
 
     public static String roundBracketWrap(String s) {

@@ -11,7 +11,7 @@ public class PostgresDialect implements SqlDialect {
 
     @Override
     public String quoteIdentifier(String identifier) {
-        return "\"" + identifier + "\"";
+        return SqlQueryConstants.quoteIdentifier(identifier, "\"", "\"");
     }
 
     @Override

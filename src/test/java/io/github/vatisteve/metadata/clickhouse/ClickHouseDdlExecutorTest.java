@@ -1,6 +1,7 @@
 package io.github.vatisteve.metadata.clickhouse;
 
 import io.github.vatisteve.metadata.core.ColumnMetadata;
+import io.github.vatisteve.metadata.core.ConstraintType;
 import io.github.vatisteve.metadata.core.TableMetadata;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +9,7 @@ import java.sql.Connection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -70,5 +72,33 @@ class ClickHouseDdlExecutorTest {
         executor.createTable();
 
         assertTrue(executor.capturedSql.contains("ENGINE = Log"), executor.capturedSql);
+    }
+
+    private CapturingExecutor checkExecutor() {
+        ColumnMetadata age = ClickHouseColumnMetadata.builder()
+            .name("age").dataType("Int32").checkConstraint("> 0").build();
+        return new CapturingExecutor(TableMetadata.builder()
+            .name("person").columnsMetadata(List.of(age)).build());
+    }
+
+    @Test
+    void addAndDropCheckConstraint_supported() throws Exception {
+        CapturingExecutor executor = checkExecutor();
+
+        executor.addColumnConstraint(ConstraintType.CHECK, "age");
+        assertTrue(executor.capturedSql.contains(
+            "ADD CONSTRAINT constraint_age CHECK age > 0"), executor.capturedSql);
+
+        executor.dropColumnConstraint(ConstraintType.CHECK, "constraint_age");
+        assertTrue(executor.capturedSql.contains("DROP CONSTRAINT constraint_age"), executor.capturedSql);
+    }
+
+    @Test
+    void nonCheckConstraints_unsupported() {
+        CapturingExecutor executor = checkExecutor();
+        assertThrows(UnsupportedOperationException.class,
+            () -> executor.addColumnConstraint(ConstraintType.PRIMARY_KEY, "age"));
+        assertThrows(UnsupportedOperationException.class,
+            () -> executor.dropColumnConstraint(ConstraintType.FOREIGN_KEY, "x"));
     }
 }

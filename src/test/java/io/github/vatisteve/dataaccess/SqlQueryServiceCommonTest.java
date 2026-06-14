@@ -3,6 +3,7 @@ package io.github.vatisteve.dataaccess;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -55,6 +56,25 @@ class SqlQueryServiceCommonTest {
         // PostgreSQL double-quotes identifiers instead of MySQL backticks
         assertTrue(query.contains("\"information_schema\".\"columns\""), query);
         assertTrue(!query.contains("`"), query);
+    }
+
+    @Test
+    void describeColumnsNameParameterizedQuery_bindsFilterValues() {
+        ParameterizedQuery pq = service.describeColumnsNameParameterizedQuery("my_schema", "my_table", "a", "b");
+        // values are bound, not inlined as quoted literals
+        assertTrue(pq.getSql().contains("table_schema = ?"), pq.getSql());
+        assertTrue(pq.getSql().contains("table_name = ?"), pq.getSql());
+        assertTrue(pq.getSql().contains("NOT IN ( ?, ? )"), pq.getSql());
+        assertTrue(!pq.getSql().contains("'my_schema'"), pq.getSql());
+        assertEquals(java.util.Arrays.asList("my_schema", "my_table", "a", "b"), pq.getParameters());
+    }
+
+    @Test
+    void asString_isNullSafeAndHandlesArrays() {
+        assertEquals("", SqlQueryServiceCommon.asString(null));
+        assertEquals("42", SqlQueryServiceCommon.asString(42));
+        assertEquals("abc", SqlQueryServiceCommon.asString(new char[]{'a', 'b', 'c'}));
+        assertEquals("xy", SqlQueryServiceCommon.asString(new byte[]{'x', 'y'}));
     }
 
     @Test
