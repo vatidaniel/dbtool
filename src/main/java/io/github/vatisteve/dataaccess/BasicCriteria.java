@@ -50,7 +50,7 @@ public class BasicCriteria extends SqlQueryConstants {
     }
 
     public BasicCriteria in(Collection<?> values) {
-        return appendInClause(IN_FORMAT, values.toArray());
+        return appendInClause(IN_FORMAT, values == null ? null : values.toArray());
     }
 
     public BasicCriteria notIn(Object... values) {
@@ -58,19 +58,19 @@ public class BasicCriteria extends SqlQueryConstants {
     }
 
     public BasicCriteria notIn(Collection<?> values) {
-        return appendInClause(NOT_IN_FORMAT, values.toArray());
+        return appendInClause(NOT_IN_FORMAT, values == null ? null : values.toArray());
     }
 
     private BasicCriteria appendInClause(String format, Object[] values) {
-        requireNonEmpty(values.length);
+        requireNonEmpty(values);
         String placeholders = Arrays.stream(values).map(v -> QUESTION_MARK).collect(Collectors.joining(COMMA + SPACE));
         criteria.append(SPACE).append(String.format(format, placeholders)).append(SPACE);
         parameters.addAll(Arrays.asList(values));
         return this;
     }
 
-    private static void requireNonEmpty(int size) {
-        if (size == 0) {
+    private static void requireNonEmpty(Object[] values) {
+        if (values == null || values.length == 0) {
             throw new IllegalArgumentException("IN / NOT IN requires at least one value");
         }
     }
@@ -121,7 +121,7 @@ public class BasicCriteria extends SqlQueryConstants {
     /** @deprecated inlines the values into the SQL text; use {@link #in(Object...)} instead. */
     @Deprecated
     public BasicCriteria inFormat(String... elements) {
-        requireNonEmpty(elements.length);
+        requireNonEmpty(elements);
         String wrappedElement = Arrays.stream(elements).map(SqlQueryConstants::singleQuoteWrap).collect(Collectors.joining(COMMA + SPACE));
         criteria.append(SPACE).append(String.format(IN_FORMAT, wrappedElement)).append(SPACE);
         return this;
@@ -130,7 +130,7 @@ public class BasicCriteria extends SqlQueryConstants {
     /** @deprecated inlines the values into the SQL text; use {@link #notIn(Object...)} instead. */
     @Deprecated
     public BasicCriteria notInFormat(String... elements) {
-        requireNonEmpty(elements.length);
+        requireNonEmpty(elements);
         String wrappedElement = Arrays.stream(elements).map(SqlQueryConstants::singleQuoteWrap).collect(Collectors.joining(COMMA + SPACE));
         criteria.append(SPACE).append(String.format(NOT_IN_FORMAT, wrappedElement)).append(SPACE);
         return this;

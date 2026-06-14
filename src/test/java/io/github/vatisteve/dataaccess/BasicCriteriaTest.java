@@ -72,6 +72,17 @@ class BasicCriteriaTest {
     }
 
     @Test
+    void in_withNullValues_throwsIllegalArgumentNotNpe() {
+        // a null argument should fail the same way an empty one does, not surface a raw NPE
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").in((Object[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notIn((Object[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").in((java.util.Collection<?>) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notIn((java.util.Collection<?>) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").inFormat((String[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notInFormat((String[]) null));
+    }
+
+    @Test
     void and_withCriteria_mergesParametersInOrder() {
         BasicCriteria c = new BasicCriteria("a").equal(1)
             .and(new BasicCriteria("b").in("x", "y"));
