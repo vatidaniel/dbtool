@@ -74,8 +74,10 @@ Two largely independent subsystems under `io.github.vatidaniel`:
 - `DataType.BasicDataType` (`NUMERIC, STRING, TEMPORAL, SPATIAL`) is the root category. Dialect enums set
   their `parent` to one of these so executors can branch on category (e.g. quote STRING/SPATIAL defaults,
   leave NUMERIC/TEMPORAL bare) via `getParent() instanceof DataType.BasicDataType`.
-- `common.EnumResponse` (`@JsonFormat(shape = OBJECT)`) is how enums serialize to JSON as
-  `{label, value}` objects for the consuming API.
+- `common.EnumResponse` is a plain, dependency-free interface (`name()`, `getLabel()`,
+  `getValue()`) exposing each enum constant's `{label, value}` pair to the consuming API. It carries
+  no serialization annotations — the consumer decides how to serialize it — so the library pulls in no
+  JSON library.
 
 ## Conventions
 

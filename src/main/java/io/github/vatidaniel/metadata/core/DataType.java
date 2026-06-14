@@ -10,8 +10,6 @@ import java.util.Objects;
  */
 public interface DataType extends EnumResponse {
 
-    String name();
-
     default String getKeyWord() {
         return name();
     }
@@ -29,10 +27,6 @@ public interface DataType extends EnumResponse {
     }
 
     default String getLabel() {
-        return name();
-    }
-
-    default String getValue() {
         return name();
     }
 
@@ -57,7 +51,7 @@ public interface DataType extends EnumResponse {
 
     /**
      * A {@link DataType} backed by a raw keyword, created via {@link DataType#of(String)} for types
-     * that are not modelled by a dialect enum.
+     * that are not modeled by a dialect enum.
      */
     final class RawDataType implements DataType {
 

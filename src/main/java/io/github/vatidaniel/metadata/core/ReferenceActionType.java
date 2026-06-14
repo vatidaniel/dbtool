@@ -19,9 +19,4 @@ public enum ReferenceActionType implements EnumResponse {
 
     private final String label;
 
-    @Override
-    public String getValue() {
-        return name();
-    }
-
 }
