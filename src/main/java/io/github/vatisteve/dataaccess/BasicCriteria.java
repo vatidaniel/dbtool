@@ -62,10 +62,17 @@ public class BasicCriteria extends SqlQueryConstants {
     }
 
     private BasicCriteria appendInClause(String format, Object[] values) {
+        requireNonEmpty(values.length);
         String placeholders = Arrays.stream(values).map(v -> QUESTION_MARK).collect(Collectors.joining(COMMA + SPACE));
         criteria.append(SPACE).append(String.format(format, placeholders)).append(SPACE);
         parameters.addAll(Arrays.asList(values));
         return this;
+    }
+
+    private static void requireNonEmpty(int size) {
+        if (size == 0) {
+            throw new IllegalArgumentException("IN / NOT IN requires at least one value");
+        }
     }
 
     /** Append another criteria with {@code AND}, merging its bound parameters in order. */
@@ -114,6 +121,7 @@ public class BasicCriteria extends SqlQueryConstants {
     /** @deprecated inlines the values into the SQL text; use {@link #in(Object...)} instead. */
     @Deprecated
     public BasicCriteria inFormat(String... elements) {
+        requireNonEmpty(elements.length);
         String wrappedElement = Arrays.stream(elements).map(SqlQueryConstants::singleQuoteWrap).collect(Collectors.joining(COMMA + SPACE));
         criteria.append(SPACE).append(String.format(IN_FORMAT, wrappedElement)).append(SPACE);
         return this;
@@ -122,6 +130,7 @@ public class BasicCriteria extends SqlQueryConstants {
     /** @deprecated inlines the values into the SQL text; use {@link #notIn(Object...)} instead. */
     @Deprecated
     public BasicCriteria notInFormat(String... elements) {
+        requireNonEmpty(elements.length);
         String wrappedElement = Arrays.stream(elements).map(SqlQueryConstants::singleQuoteWrap).collect(Collectors.joining(COMMA + SPACE));
         criteria.append(SPACE).append(String.format(NOT_IN_FORMAT, wrappedElement)).append(SPACE);
         return this;

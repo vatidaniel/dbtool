@@ -48,19 +48,24 @@ public class SqlQueryServiceCommon {
      */
     @Deprecated
     public String describeColumnsNameQuery(String schemaName, String tableName, String... ignoredColumns) {
+        BasicCriteria criteria = new BasicCriteria("table_schema").equalWithSingleQuote(schemaName)
+            .and("table_name").equalWithSingleQuote(tableName);
+        if (ignoredColumns.length > 0) {
+            criteria.and(new BasicCriteria("column_name").notInFormat(ignoredColumns).toCriteriaString());
+        }
         return new BasicQuery().select(columnDescriptions)
             .from(informationSchemaTable(COLUMNS_TABLE))
-            .where(new BasicCriteria("table_schema").equalWithSingleQuote(schemaName)
-                .and("table_name").equalWithSingleQuote(tableName)
-                .and(new BasicCriteria("column_name").notInFormat(ignoredColumns).toCriteriaString()))
+            .where(criteria)
             .toQueryString();
     }
 
     /** Like {@link #describeColumnsNameQuery} but with the filter values bound as parameters. */
     public ParameterizedQuery describeColumnsNameParameterizedQuery(String schemaName, String tableName, String... ignoredColumns) {
         BasicCriteria criteria = new BasicCriteria("table_schema").equal(schemaName)
-            .and(new BasicCriteria("table_name").equal(tableName))
-            .and(new BasicCriteria("column_name").notIn((Object[]) ignoredColumns));
+            .and(new BasicCriteria("table_name").equal(tableName));
+        if (ignoredColumns.length > 0) {
+            criteria.and(new BasicCriteria("column_name").notIn((Object[]) ignoredColumns));
+        }
         return new BasicQuery(dialect).select(columnDescriptions)
             .from(informationSchemaTable(COLUMNS_TABLE))
             .where(criteria)
