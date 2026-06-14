@@ -12,10 +12,8 @@ import java.util.stream.Collectors;
  *
  * @apiNote used for mariadb, mysql query format
  *
- * <p>Value methods come in two flavors: the bound ones ({@link #equal}, {@link #in}, ...) emit
- * {@code ?} placeholders and record the value in {@link #parameters()} for a {@link PreparedStatement},
- * while the older {@code *WithSingleQuote}/{@code *Format} methods inline the value into the SQL text and
- * are deprecated because they are open to SQL injection.
+ * <p>Value methods bind through {@code ?} placeholders ({@link #equal}, {@link #in}, ...), recording
+ * each value in {@link #parameters()} for a {@link PreparedStatement}.
  */
 public class BasicCriteria extends SqlQueryConstants {
 
@@ -82,22 +80,6 @@ public class BasicCriteria extends SqlQueryConstants {
         return this;
     }
 
-    // --- inlining value methods (deprecated: prone to SQL injection) ---
-
-    /** @deprecated inlines the value into the SQL text; use {@link #equal(Object)} instead. */
-    @Deprecated(since = "0.1.0", forRemoval = true)
-    public BasicCriteria equalWithSingleQuote(String query) {
-        criteria.append(SPACE).append(EQUAL).append(SPACE).append(SINGLE_QUOTE).append(query).append(SINGLE_QUOTE).append(SPACE);
-        return this;
-    }
-
-    /** @deprecated inlines the value into the SQL text; use {@link #notEqual(Object)} instead. */
-    @Deprecated(since = "0.1.0", forRemoval = true)
-    public BasicCriteria notEqualWithSingleQuote(String query) {
-        criteria.append(SPACE).append(SCREAMER).append(EQUAL).append(SPACE).append(SINGLE_QUOTE).append(query).append(SINGLE_QUOTE).append(SPACE);
-        return this;
-    }
-
     public BasicCriteria equalWithNumber(Number number) {
         criteria.append(SPACE).append(EQUAL).append(SPACE).append(number).append(SPACE);
         return this;
@@ -115,24 +97,6 @@ public class BasicCriteria extends SqlQueryConstants {
 
     public BasicCriteria andFormat(String query) {
         criteria.append(SPACE).append(String.format(AND_FORMAT, query)).append(SPACE);
-        return this;
-    }
-
-    /** @deprecated inlines the values into the SQL text; use {@link #in(Object...)} instead. */
-    @Deprecated(since = "0.1.0", forRemoval = true)
-    public BasicCriteria inFormat(String... elements) {
-        requireNonEmpty(elements);
-        String wrappedElement = Arrays.stream(elements).map(SqlQueryConstants::singleQuoteWrap).collect(Collectors.joining(COMMA + SPACE));
-        criteria.append(SPACE).append(String.format(IN_FORMAT, wrappedElement)).append(SPACE);
-        return this;
-    }
-
-    /** @deprecated inlines the values into the SQL text; use {@link #notIn(Object...)} instead. */
-    @Deprecated(since = "0.1.0", forRemoval = true)
-    public BasicCriteria notInFormat(String... elements) {
-        requireNonEmpty(elements);
-        String wrappedElement = Arrays.stream(elements).map(SqlQueryConstants::singleQuoteWrap).collect(Collectors.joining(COMMA + SPACE));
-        criteria.append(SPACE).append(String.format(NOT_IN_FORMAT, wrappedElement)).append(SPACE);
         return this;
     }
 

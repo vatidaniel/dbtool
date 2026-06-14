@@ -94,8 +94,8 @@ try (PreparedStatement ps = pq.prepare(connection);
 ```
 
 > **Note:** prefer the bound value methods (`equal`, `in`, ...) plus `toPreparedQuery()` so values go
-> through a `PreparedStatement`. The older `*WithSingleQuote`/`*Format` methods and `toQueryString()`
-> inline values into the SQL text and are deprecated. **Identifiers** (table/column names) are quoted and
+> through a `PreparedStatement`. `toQueryString()` inlines values into the SQL text, so reserve it for
+> trusted/literal-free queries (counts, pagination). **Identifiers** (table/column names) are quoted and
 > escaped per dialect but cannot be parameterized, so identifiers must still be trusted or validated; the
 > DDL side likewise builds raw SQL.
 

@@ -41,18 +41,16 @@ class SqlQueryServiceCommonTest {
     }
 
     @Test
-    void describeColumnsNameQuery_targetsInformationSchema() {
-        String query = service.describeColumnsNameQuery("my_schema", "my_table", "ignored");
+    void describeColumns_targetsInformationSchema() {
+        String query = service.describeColumnsNameParameterizedQuery("my_schema", "my_table", "ignored").getSql();
         assertTrue(query.contains("`information_schema`.`columns`"), query);
-        assertTrue(query.contains("'my_schema'"), query);
-        assertTrue(query.contains("'my_table'"), query);
         assertTrue(query.contains("NOT IN"), query);
     }
 
     @Test
-    void describeColumnsNameQuery_usesDialectIdentifierQuoting() {
+    void describeColumns_usesDialectIdentifierQuoting() {
         SqlQueryServiceCommon pg = new SqlQueryServiceCommon(PostgresDialect.INSTANCE);
-        String query = pg.describeColumnsNameQuery("my_schema", "my_table");
+        String query = pg.describeColumnsNameParameterizedQuery("my_schema", "my_table").getSql();
         // PostgreSQL double-quotes identifiers instead of MySQL backticks
         assertTrue(query.contains("\"information_schema\".\"columns\""), query);
         assertTrue(!query.contains("`"), query);
@@ -93,7 +91,7 @@ class SqlQueryServiceCommonTest {
         assertTrue(fetch.contains("OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY"), fetch);
         assertTrue(!fetch.contains("LIMIT"), fetch);
         // identifiers use bracket quoting
-        String describe = ss.describeColumnsNameQuery("my_schema", "my_table");
+        String describe = ss.describeColumnsNameParameterizedQuery("my_schema", "my_table").getSql();
         assertTrue(describe.contains("[information_schema].[columns]"), describe);
     }
 }
