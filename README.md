@@ -5,10 +5,10 @@ consumed as a dependency (e.g. by a data-governance / ETL platform) rather than 
 
 ## Features
 
-- **Query building** (`io.github.vatisteve.dataaccess`) — fluent `BasicQuery` / `BasicCriteria` builders
+- **Query building** (`io.github.vatidaniel.dataaccess`) — fluent `BasicQuery` / `BasicCriteria` builders
   for MySQL/MariaDB-style `SELECT` statements, plus `information_schema` introspection helpers and a
   paged data-fetch contract (`ExecuteDataService`).
-- **DDL execution** (`io.github.vatisteve.metadata`) — a dialect-agnostic `DdlExecutor` interface
+- **DDL execution** (`io.github.vatidaniel.metadata`) — a dialect-agnostic `DdlExecutor` interface
   (create/drop/rename table, add/drop/modify columns and constraints) over a JDBC `Connection`, with
   per-dialect implementations for **MySQL/MariaDB**, **PostgreSQL**, **SQL Server**, and **ClickHouse**.
   Multiple operations can be wrapped in one transaction via `runInTransaction(...)`.
@@ -102,7 +102,7 @@ try (PreparedStatement ps = pq.prepare(connection);
 ## Adding a dialect
 
 The relational DDL logic lives once in `metadata.core.StandardSqlDdlExecutor`; the parts that vary
-between databases are captured by the `SqlDialect` strategy (`io.github.vatisteve.dataaccess`):
+between databases are captured by the `SqlDialect` strategy (`io.github.vatidaniel.dataaccess`):
 identifier quoting, the identity/auto-increment clause, the storage clause, and pagination. To add a
 standard relational database:
 

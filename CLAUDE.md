@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`io.github.vatisteve:dbtool` is a Java 11 Maven **library** (packaged as a jar, no `main`). It provides
+`io.github.vatidaniel:dbtool` is a Java 11 Maven **library** (packaged as a jar, no `main`). It provides
 database-dialect-aware building blocks for two concerns: read-side SQL query construction / data fetching
 (`dataaccess`) and write-side DDL execution against a live JDBC `Connection` (`metadata`). It is consumed
 as a dependency by a larger data-governance / ETL platform (see SLF4J log topics like
@@ -24,7 +24,7 @@ processor isn't running in your editor/build.
 
 ## Architecture
 
-Two largely independent subsystems under `io.github.vatisteve`:
+Two largely independent subsystems under `io.github.vatidaniel`:
 
 ### `dataaccess` — query building & data fetching (read side)
 - `SqlQueryConstants` is the shared base of constants and static SQL-formatting helpers (`backtickWrap`,
@@ -49,7 +49,7 @@ Two largely independent subsystems under `io.github.vatisteve`:
   - `DdlQueryConstants extends SqlQueryConstants` adds DDL keyword constants; dialect executors extend it.
 - **Standard relational dialects share one executor.** `metadata.core.StandardSqlDdlExecutor` holds the
   SQL-standard generation logic and delegates the bits that vary to a `SqlDialect` strategy
-  (`io.github.vatisteve.dataaccess`: `quoteIdentifier`, `autoIncrementClause`, `tablespaceClause`,
+  (`io.github.vatidaniel.dataaccess`: `quoteIdentifier`, `autoIncrementClause`, `tablespaceClause`,
   `paginate`). `MariadbDialect` / `PostgresDialect` / `SqlServerDialect` are the impls. The executors
   (`metadata.mariadb.MariadbDdlExecutor`, `metadata.postgres.PostgresDdlExecutor`,
   `metadata.sqlserver.SqlServerDdlExecutor`) are thin subclasses that just bind a dialect, overriding a
