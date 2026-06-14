@@ -70,6 +70,14 @@ class SqlQueryServiceCommonTest {
     }
 
     @Test
+    void describeColumnsNameParameterizedQuery_withNoIgnoredColumns_omitsNotInClause() {
+        ParameterizedQuery pq = service.describeColumnsNameParameterizedQuery("my_schema", "my_table");
+        assertTrue(!pq.getSql().contains("NOT IN"), pq.getSql());
+        assertTrue(!pq.getSql().contains("( )"), pq.getSql());
+        assertEquals(java.util.Arrays.asList("my_schema", "my_table"), pq.getParameters());
+    }
+
+    @Test
     void asString_isNullSafeAndHandlesArrays() {
         assertEquals("", SqlQueryServiceCommon.asString(null));
         assertEquals("42", SqlQueryServiceCommon.asString(42));

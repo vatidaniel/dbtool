@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -62,6 +63,23 @@ class BasicCriteriaTest {
         BasicCriteria c = new BasicCriteria("status").notIn(Arrays.asList("X", "Y"));
         assertTrue(c.toCriteriaString().contains("NOT IN ( ?, ? )"), c.toCriteriaString());
         assertEquals(Arrays.asList("X", "Y"), c.parameters());
+    }
+
+    @Test
+    void in_withNoValues_throwsInsteadOfEmittingEmptyInList() {
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").in());
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notIn());
+    }
+
+    @Test
+    void in_withNullValues_throwsIllegalArgumentNotNpe() {
+        // a null argument should fail the same way an empty one does, not surface a raw NPE
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").in((Object[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notIn((Object[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").in((java.util.Collection<?>) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notIn((java.util.Collection<?>) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").inFormat((String[]) null));
+        assertThrows(IllegalArgumentException.class, () -> new BasicCriteria("status").notInFormat((String[]) null));
     }
 
     @Test
