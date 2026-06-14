@@ -5,10 +5,10 @@ consumed as a dependency (e.g. by a data-governance / ETL platform) rather than 
 
 ## Features
 
-- **Query building** (`io.github.vatisteve.dataaccess`) — fluent `BasicQuery` / `BasicCriteria` builders
+- **Query building** (`io.github.vatidaniel.dataaccess`) — fluent `BasicQuery` / `BasicCriteria` builders
   for MySQL/MariaDB-style `SELECT` statements, plus `information_schema` introspection helpers and a
   paged data-fetch contract (`ExecuteDataService`).
-- **DDL execution** (`io.github.vatisteve.metadata`) — a dialect-agnostic `DdlExecutor` interface
+- **DDL execution** (`io.github.vatidaniel.metadata`) — a dialect-agnostic `DdlExecutor` interface
   (create/drop/rename table, add/drop/modify columns and constraints) over a JDBC `Connection`, with
   per-dialect implementations for **MySQL/MariaDB**, **PostgreSQL**, **SQL Server**, and **ClickHouse**.
   Multiple operations can be wrapped in one transaction via `runInTransaction(...)`.
@@ -53,15 +53,26 @@ Generate a `CREATE TABLE` statement from metadata:
 TableMetadata table = TableMetadata.builder()
     .name("person")
     .columnsMetadata(List.of(
-        ColumnMetadata.builder().name("id").dataType("INT")
+        ColumnMetadata.builder().name("id").dataType(MariadbDataType.INT)
             .primaryKey(true).nullable(false).identity(true).build(),
-        ColumnMetadata.builder().name("name").dataType("VARCHAR").dataTypeExtension("255").build()))
+        ColumnMetadata.builder().name("name").dataType(MariadbDataType.VARCHAR).dataTypeExtension("255").build()))
     .build();
 
 try (DdlExecutor ddl = new MariadbDdlExecutor(table, connection)) {
     ddl.createTable();
 }
 ```
+
+A column's type is the typed `DataType` (e.g. `MariadbDataType.VARCHAR`, `PostgresDataType.INTEGER`),
+which also carries the `NUMERIC / STRING / TEMPORAL / SPATIAL` category. For a type that has no enum
+constant yet (a vendor-specific or newly added type) use the raw escape hatch:
+
+```java
+ColumnMetadata.builder().name("embedding").dataType(DataType.of("VECTOR")).dataTypeExtension("768").build();
+```
+
+`ColumnMetadata.getDataType()` returns the typed `DataType`; `getDataTypeDefinition()` returns the
+rendered SQL fragment (the keyword plus any `dataTypeExtension`, e.g. `VARCHAR(255)`).
 
 The executor uses the `Connection` you pass in but does **not** close it — the caller owns the
 connection's lifecycle (`close()` is a no-op kept only for try-with-resources convenience).
@@ -91,7 +102,7 @@ try (PreparedStatement ps = pq.prepare(connection);
 ## Adding a dialect
 
 The relational DDL logic lives once in `metadata.core.StandardSqlDdlExecutor`; the parts that vary
-between databases are captured by the `SqlDialect` strategy (`io.github.vatisteve.dataaccess`):
+between databases are captured by the `SqlDialect` strategy (`io.github.vatidaniel.dataaccess`):
 identifier quoting, the identity/auto-increment clause, the storage clause, and pagination. To add a
 standard relational database:
 
