@@ -115,6 +115,17 @@ class BasicQueryTest {
     }
 
     @Test
+    void orderBy_precedesPagination_forValidOffsetFetch() {
+        String query = new BasicQuery(new SqlServerDialect())
+            .select("*").from("[t]").orderBy("[id]").paginate(10, 20).toQueryString();
+        int orderBy = query.indexOf("ORDER BY");
+        int offset = query.indexOf("OFFSET");
+        assertTrue(query.contains("ORDER BY [id]"), query);
+        assertTrue(orderBy >= 0 && orderBy < offset, query);
+        assertTrue(query.contains("OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY"), query);
+    }
+
+    @Test
     void toPreparedQuery_collectsWhereParametersInOrder() {
         ParameterizedQuery pq = new BasicQuery()
             .select("id")

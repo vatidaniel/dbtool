@@ -50,10 +50,13 @@ Two largely independent subsystems under `io.github.vatisteve`:
 - **Standard relational dialects share one executor.** `metadata.core.StandardSqlDdlExecutor` holds the
   SQL-standard generation logic and delegates the bits that vary to a `SqlDialect` strategy
   (`io.github.vatisteve.dataaccess`: `quoteIdentifier`, `autoIncrementClause`, `tablespaceClause`,
-  `paginate`). `MariadbDialect` / `PostgresDialect` are the impls. The executors
-  (`metadata.mariadb.MariadbDdlExecutor`, `metadata.postgres.PostgresDdlExecutor`) are thin subclasses
-  that just bind a dialect, overriding a `protected` hook (e.g. `buildUpdateColumnDefinitionSql`) only
-  where the statement shape diverges (Postgres `ALTER COLUMN ... TYPE` vs MySQL `MODIFY`). **To add a
+  `paginate`). `MariadbDialect` / `PostgresDialect` / `SqlServerDialect` are the impls. The executors
+  (`metadata.mariadb.MariadbDdlExecutor`, `metadata.postgres.PostgresDdlExecutor`,
+  `metadata.sqlserver.SqlServerDdlExecutor`) are thin subclasses that just bind a dialect, overriding a
+  `protected` hook (e.g. `buildUpdateColumnDefinitionSql`/`buildAddConstraintSql`) — or a whole operation
+  (SQL Server overrides `addColumn`, renames via `sp_rename`) — only where the statement shape diverges
+  (Postgres `ALTER COLUMN ... TYPE` vs MySQL `MODIFY`). `DdlExecutor.runInTransaction(...)` wraps a batch
+  of operations in one transaction. **To add a
   standard relational DB: implement `SqlDialect`, subclass `StandardSqlDdlExecutor`, add a `DataType`
   enum.**
 - **`SqlDialect` lives in `dataaccess`** (the lowest-level package) so both the DDL executors and the
