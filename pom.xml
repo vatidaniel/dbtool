@@ -21,10 +21,13 @@
         <surefire.version>3.2.5</surefire.version>
         <compiler.plugin.version>3.13.0</compiler.plugin.version>
         <!-- integration-test profile only -->
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
         <postgresql.driver.version>42.7.4</postgresql.driver.version>
         <mysql.driver.version>8.4.0</mysql.driver.version>
+        <mssql.driver.version>12.8.1.jre11</mssql.driver.version>
+        <clickhouse.driver.version>0.4.6</clickhouse.driver.version>
         <build-helper.version>3.6.0</build-helper.version>
+        <failsafe.version>3.2.5</failsafe.version>
     </properties>
 
     <dependencies>
@@ -93,6 +96,12 @@
             <id>integration-tests</id>
             <dependencies>
                 <dependency>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                    <version>${slf4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
                     <groupId>org.testcontainers</groupId>
                     <artifactId>junit-jupiter</artifactId>
                     <version>${testcontainers.version}</version>
@@ -111,6 +120,18 @@
                     <scope>test</scope>
                 </dependency>
                 <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>mssqlserver</artifactId>
+                    <version>${testcontainers.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>clickhouse</artifactId>
+                    <version>${testcontainers.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
                     <groupId>org.postgresql</groupId>
                     <artifactId>postgresql</artifactId>
                     <version>${postgresql.driver.version}</version>
@@ -120,6 +141,19 @@
                     <groupId>com.mysql</groupId>
                     <artifactId>mysql-connector-j</artifactId>
                     <version>${mysql.driver.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.microsoft.sqlserver</groupId>
+                    <artifactId>mssql-jdbc</artifactId>
+                    <version>${mssql.driver.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.clickhouse</groupId>
+                    <artifactId>clickhouse-jdbc</artifactId>
+                    <version>${clickhouse.driver.version}</version>
+                    <classifier>all</classifier>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
@@ -141,6 +175,34 @@
                                         <source>src/integration-test/java</source>
                                     </sources>
                                 </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!--
+                        Run the *IT classes in the integration-test/verify phases. Surefire (bound to
+                        `test`) only matches *Test, so the ITs need Failsafe to actually execute - run
+                        them with: mvn -Pintegration-tests verify
+                    -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${failsafe.version}</version>
+                        <configuration>
+                            <!--
+                                Pin the Docker Remote API version Testcontainers' docker-java client uses.
+                                It otherwise probes with v1.32, which Docker Engine 25+ (min API 1.40)
+                                rejects with HTTP 400. 1.43 is supported by all modern daemons.
+                            -->
+                            <systemPropertyVariables>
+                                <api.version>1.43</api.version>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
                             </execution>
                         </executions>
                     </plugin>
