@@ -20,6 +20,11 @@
         <junit.version>5.10.2</junit.version>
         <surefire.version>3.2.5</surefire.version>
         <compiler.plugin.version>3.13.0</compiler.plugin.version>
+        <!-- integration-test profile only -->
+        <testcontainers.version>1.20.4</testcontainers.version>
+        <postgresql.driver.version>42.7.4</postgresql.driver.version>
+        <mysql.driver.version>8.4.0</mysql.driver.version>
+        <build-helper.version>3.6.0</build-helper.version>
     </properties>
 
     <dependencies>
@@ -77,5 +82,71 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+            Testcontainers-backed integration tests. Off by default so `mvn test` needs no Docker and
+            none of the heavy deps below. Run with: mvn -Pintegration-tests verify  (requires Docker).
+            The src/integration-test/java sources and the deps exist only while this profile is active.
+        -->
+        <profile>
+            <id>integration-tests</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>junit-jupiter</artifactId>
+                    <version>${testcontainers.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <version>${testcontainers.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.testcontainers</groupId>
+                    <artifactId>mysql</artifactId>
+                    <version>${testcontainers.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <version>${postgresql.driver.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.mysql</groupId>
+                    <artifactId>mysql-connector-j</artifactId>
+                    <version>${mysql.driver.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>${build-helper.version}</version>
+                        <executions>
+                            <execution>
+                                <id>add-integration-test-source</id>
+                                <phase>generate-test-sources</phase>
+                                <goals>
+                                    <goal>add-test-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/integration-test/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

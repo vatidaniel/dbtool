@@ -23,6 +23,7 @@ public class BasicQuery extends SqlQueryConstants {
     private String fromClause;
     private final List<StringBuilder> joins = new ArrayList<>();
     private String whereClause;
+    private String orderByClause;
     private final StringBuilder paginationClause = new StringBuilder();
     private final StringBuilder trailing = new StringBuilder();
     private final List<Object> parameters = new ArrayList<>();
@@ -110,6 +111,12 @@ public class BasicQuery extends SqlQueryConstants {
         return this;
     }
 
+    // Order by ... (required before OFFSET ... FETCH pagination on SQL Server / Oracle)
+    public BasicQuery orderBy(String... columns) {
+        orderByClause = ORDER_BY_KEYWORD + String.join(COMMA + SPACE, columns) + SPACE;
+        return this;
+    }
+
     // Limit ... (raw MySQL/Postgres primitive; not dialect-aware - prefer paginate(...))
     public BasicQuery limit(int limit) {
         paginationClause.append(LIMIT_KEYWORD).append(limit).append(SPACE);
@@ -139,6 +146,7 @@ public class BasicQuery extends SqlQueryConstants {
         if (fromClause != null) sql.append(fromClause);
         joins.forEach(sql::append);
         if (whereClause != null) sql.append(whereClause);
+        if (orderByClause != null) sql.append(orderByClause);
         sql.append(paginationClause);
         sql.append(trailing);
         return sql.toString();

@@ -10,21 +10,23 @@ consumed as a dependency (e.g. by a data-governance / ETL platform) rather than 
   paged data-fetch contract (`ExecuteDataService`).
 - **DDL execution** (`io.github.vatisteve.metadata`) — a dialect-agnostic `DdlExecutor` interface
   (create/drop/rename table, add/drop/modify columns and constraints) over a JDBC `Connection`, with
-  per-dialect implementations for **MySQL/MariaDB**, **PostgreSQL**, and **ClickHouse**.
+  per-dialect implementations for **MySQL/MariaDB**, **PostgreSQL**, **SQL Server**, and **ClickHouse**.
+  Multiple operations can be wrapped in one transaction via `runInTransaction(...)`.
 - **Typed metadata model** — `TableMetadata` / `ColumnMetadata` and a `DataType` hierarchy
-  (`MariadbDataType`, `ClickHouseDataType`) rooted at the `NUMERIC / STRING / TEMPORAL / SPATIAL`
-  categories.
+  (`MariadbDataType`, `PostgresDataType`, `SqlServerDataType`, `ClickHouseDataType`) rooted at the
+  `NUMERIC / STRING / TEMPORAL / SPATIAL` categories.
 
 ## Requirements
 
-- Java 11 (build with JDK 11–17; Lombok 1.18.30 predates JDK 25)
+- Java 11 (builds on modern JDKs, verified on JDK 11 and 25)
 - Maven 3
 
 ## Build & test
 
 ```bash
-mvn clean install   # build + install to local repo
-mvn test            # run the JUnit 5 test suite
+mvn clean install              # build + install to local repo
+mvn test                       # run the JUnit 5 unit tests (no Docker needed)
+mvn -Pintegration-tests test   # also run Testcontainers integration tests (requires Docker)
 ```
 
 ## Usage
@@ -79,14 +81,17 @@ standard relational database:
 
 1. Implement `SqlDialect` (see `MariadbDialect` / `PostgresDialect`).
 2. Add a thin `DdlExecutor` that extends `StandardSqlDdlExecutor` and passes your dialect (see
-   `metadata.mariadb.MariadbDdlExecutor` / `metadata.postgres.PostgresDdlExecutor`). Override a
-   `protected` hook such as `buildUpdateColumnDefinitionSql` only where the statement shape genuinely
-   differs.
+   `metadata.mariadb.MariadbDdlExecutor` / `metadata.postgres.PostgresDdlExecutor` /
+   `metadata.sqlserver.SqlServerDdlExecutor`). Override a `protected` hook such as
+   `buildUpdateColumnDefinitionSql` / `buildAddConstraintSql`, or a whole operation, only where the
+   statement shape genuinely differs (SQL Server, for example, overrides `addColumn`, the renames, and
+   the constraint hooks).
 3. Add a `DataType` enum mapping the database's types to the `NUMERIC/STRING/TEMPORAL/SPATIAL` categories
-   (see `MariadbDataType` / `PostgresDataType`).
+   (see `MariadbDataType` / `PostgresDataType` / `SqlServerDataType`).
 
 `SqlQueryServiceCommon` and `BasicQuery` also take a `SqlDialect`, so read-side queries
-(`information_schema` access, pagination) follow the same dialect — `SqlServerDialect` shows a
-read-side/pagination-only dialect whose `OFFSET ... FETCH NEXT` differs from `LIMIT/OFFSET`. Foreign-key
-references in generated DDL are quoted per-dialect. Databases that diverge too far from standard SQL can
-implement `DdlExecutor` directly instead of extending `StandardSqlDdlExecutor` (see `metadata.clickhouse`).
+(`information_schema` access, pagination) follow the same dialect — e.g. SQL Server's
+`OFFSET ... FETCH NEXT` (use `BasicQuery.orderBy(...)`, which it requires) differs from `LIMIT/OFFSET`.
+Foreign-key references in generated DDL are quoted per-dialect. Databases that diverge too far from
+standard SQL can implement `DdlExecutor` directly instead of extending `StandardSqlDdlExecutor` (see
+`metadata.clickhouse`).

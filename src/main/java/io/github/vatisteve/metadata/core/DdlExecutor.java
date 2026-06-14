@@ -41,9 +41,36 @@ public interface DdlExecutor extends AutoCloseable {
         }
     }
 
+    /**
+     * Run a sequence of DDL operations on this executor's connection inside a single transaction:
+     * disables auto-commit, commits on success, rolls back on any failure, and restores the previous
+     * auto-commit setting. Opt-in - statements executed outside this method keep their prior behaviour.
+     * Note that some engines (e.g. MySQL) auto-commit DDL regardless.
+     */
+    default void runInTransaction(DdlAction action) throws SQLException {
+        Connection connection = getConnection();
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            action.run();
+            connection.commit();
+        } catch (SQLException | RuntimeException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
     default <T> Collection<T> collectionNullSafe(Collection<T> collection) {
         if (collection == null) return Collections.emptyList();
         return collection;
+    }
+
+    /** A sequence of DDL operations to run together, e.g. via {@link #runInTransaction(DdlAction)}. */
+    @FunctionalInterface
+    interface DdlAction {
+        void run() throws SQLException;
     }
 
 }
