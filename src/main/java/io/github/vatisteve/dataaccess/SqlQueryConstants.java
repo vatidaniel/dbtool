@@ -56,8 +56,12 @@ public class SqlQueryConstants {
     public static final String TRUE = "TRUE";
     public static final String FALSE = "FALSE";
 
+    /**
+     * Wrap a value in single quotes for use as a SQL string literal, escaping any embedded single quote
+     * by doubling it (the SQL-standard rule), e.g. {@code O'Brien} -&gt; {@code 'O''Brien'}.
+     */
     public static String singleQuoteWrap(String s) {
-        return SINGLE_QUOTE + s + SINGLE_QUOTE;
+        return SINGLE_QUOTE + s.replace(SINGLE_QUOTE, SINGLE_QUOTE + SINGLE_QUOTE) + SINGLE_QUOTE;
     }
 
     /**
